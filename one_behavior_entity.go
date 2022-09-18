@@ -1,4 +1,4 @@
-package Onebehaviorentity
+package onebehaviorentity
 
 import (
 	"encoding/json"
