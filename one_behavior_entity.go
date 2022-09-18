@@ -10,8 +10,8 @@ import (
 )
 
 type OnebehaviorentityInterface interface {
-	//SetSchema set attribute,out linejsonschema
-	SetSchema(attrSchema string, outSchema string)
+	//Build set attribute,out linejsonschema,and _errChain, entity should be ref to change attribute value,
+	Build(entity OnebehaviorentityInterface, attrSchema string, outSchema string)
 	//In set input
 	In(input []byte)
 	//Out get output
@@ -19,7 +19,7 @@ type OnebehaviorentityInterface interface {
 	//ValidatInput validate input
 	ValidatInput()
 	//Do Implementation business logic
-	Do()
+	Do() (out interface{}, err error)
 	//ValidateOutput validate output schema
 	ValidateOutput()
 	//JsonSchema get attr validate jsonschema
@@ -33,20 +33,24 @@ type Onebehaviorentity struct {
 	attrSchema string
 	out        interface{}
 	outSchema  string
+	_entity    OnebehaviorentityInterface
 	_errChain  errorformatter.ErrorChain
 	_isDone    bool
 }
 
-func (h *Onebehaviorentity) SetSchema(attrSchema string, outSchema string) {
+func (h *Onebehaviorentity) Build(entity OnebehaviorentityInterface, attrSchema string, outSchema string) {
 	h.attrSchema = attrSchema
 	h.outSchema = outSchema
+	h._entity = entity
+	h._errChain = errorformatter.NewErrorChain()
 }
 
 func (h *Onebehaviorentity) In(input []byte) {
 	h.input = input
 	h.ValidatInput()
 	if h.Error() == nil {
-		h._errChain.SetError(json.Unmarshal(h.input, h)) // 当前实现,没有对外属性,被嵌入后,主体可能提供公共属性
+		// set h._entity attribute
+		h._errChain.SetError(json.Unmarshal(h.input, h._entity))
 	}
 }
 
@@ -71,7 +75,13 @@ func (h *Onebehaviorentity) Error() (err error) {
 
 func (h *Onebehaviorentity) Out(out interface{}) (err error) {
 	if !h._isDone {
-		h.Do()
+		h._isDone = true
+		tmpOut, err := h._entity.Do() // call h._entity Do
+		if err != nil {
+			h._errChain.SetError(err)
+		}
+		h.out = tmpOut
+
 	}
 	h.ValidateOutput()
 	err = h.Error()
@@ -88,12 +98,10 @@ func (h *Onebehaviorentity) Out(out interface{}) (err error) {
 	return nil
 }
 
-func (h *Onebehaviorentity) Do() {
-	if h.Error() != nil {
-		return
-	}
-	h._isDone = true
-	//todo Implementation business logic
+func (h *Onebehaviorentity) Do() (out interface{}, err error) {
+
+	//h._entity  Implementation business logic
+	return
 }
 
 func (h *Onebehaviorentity) ValidatInput() {
