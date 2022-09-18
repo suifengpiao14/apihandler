@@ -16,14 +16,10 @@ type OnebehaviorentityInterface interface {
 	In(input []byte)
 	//Out get output
 	Out(out interface{}) (err error)
-	//ValidatInput validate input
-	ValidatInput()
 	//Do Implementation business logic
 	Do() (out interface{}, err error)
-	//ValidateOutput validate output schema
-	ValidateOutput()
-	//JsonSchema get attr validate jsonschema
-	JsonSchema() (jsonschema string, err error)
+	//InJsonSchema get attr validate jsonschema
+	InJsonSchema() (jsonschema string, err error)
 	//Error get error
 	Error() (err error)
 }
@@ -47,14 +43,14 @@ func (h *Onebehaviorentity) Build(entity OnebehaviorentityInterface, attrSchema 
 
 func (h *Onebehaviorentity) In(input []byte) {
 	h.input = input
-	h.ValidatInput()
+	h.validatInput()
 	if h.Error() == nil {
 		// set h._entity attribute
 		h._errChain.SetError(json.Unmarshal(h.input, h._entity))
 	}
 }
 
-func (h *Onebehaviorentity) JsonSchema() (schema string, err error) {
+func (h *Onebehaviorentity) InJsonSchema() (schema string, err error) {
 	lineSchema, err := jsonschemaline.ParseJsonschemaline(h.attrSchema)
 	if err != nil {
 		h._errChain.SetError(err)
@@ -83,7 +79,7 @@ func (h *Onebehaviorentity) Out(out interface{}) (err error) {
 		h.out = tmpOut
 
 	}
-	h.ValidateOutput()
+	h.validateOutput()
 	err = h.Error()
 	if err != nil {
 		return err
@@ -104,7 +100,7 @@ func (h *Onebehaviorentity) Do() (out interface{}, err error) {
 	return
 }
 
-func (h *Onebehaviorentity) ValidatInput() {
+func (h *Onebehaviorentity) validatInput() {
 	if h.Error() != nil {
 		return
 	}
@@ -131,7 +127,7 @@ func (h *Onebehaviorentity) ValidatInput() {
 	}
 }
 
-func (h *Onebehaviorentity) ValidateOutput() {
+func (h *Onebehaviorentity) validateOutput() {
 	if h.Error() != nil {
 		return
 	}
