@@ -11,17 +11,19 @@ import (
 
 type OnebehaviorentityInterface interface {
 	//Build set attribute,out linejsonschema,and _errChain, entity should be ref to change attribute value,
-	Build(entity OnebehaviorentityInterface, attrSchema string, outSchema string)
+	Build(entity OnebehaviorentityInterface, attrSchema string, outSchema string, doFn func() (out interface{}, err error))
 	//In set input
 	In(input []byte)
 	//Out get output
 	Out(out interface{}) (err error)
-	//Do Implementation business logic
-	Do() (out interface{}, err error)
 	//InJsonSchema get attr validate jsonschema
 	InJsonSchema() (jsonschema string, err error)
 	//Error get error
 	Error() (err error)
+}
+
+func NewOnebehaviorentity() OnebehaviorentityInterface {
+	return &Onebehaviorentity{}
 }
 
 type Onebehaviorentity struct {
@@ -32,9 +34,10 @@ type Onebehaviorentity struct {
 	_entity    OnebehaviorentityInterface
 	_errChain  errorformatter.ErrorChain
 	_isDone    bool
+	_doFn      func() (out interface{}, err error)
 }
 
-func (h *Onebehaviorentity) Build(entity OnebehaviorentityInterface, attrSchema string, outSchema string) {
+func (h *Onebehaviorentity) Build(entity OnebehaviorentityInterface, attrSchema string, outSchema string, doFn func() (out interface{}, err error)) {
 	h.attrSchema = attrSchema
 	h.outSchema = outSchema
 	h._entity = entity
@@ -44,10 +47,14 @@ func (h *Onebehaviorentity) Build(entity OnebehaviorentityInterface, attrSchema 
 func (h *Onebehaviorentity) In(input []byte) {
 	h.input = input
 	h.validatInput()
-	if h.Error() == nil {
-		// set h._entity attribute
-		h._errChain.SetError(json.Unmarshal(h.input, h._entity))
+	if h._errChain.Error() != nil {
+		return
 	}
+	if input == nil { // ignore input
+		return
+	}
+	// set h._entity attribute
+	h._errChain.SetError(json.Unmarshal(h.input, h._entity))
 }
 
 func (h *Onebehaviorentity) InJsonSchema() (schema string, err error) {
@@ -72,7 +79,10 @@ func (h *Onebehaviorentity) Error() (err error) {
 func (h *Onebehaviorentity) Out(out interface{}) (err error) {
 	if !h._isDone {
 		h._isDone = true
-		tmpOut, err := h._entity.Do() // call h._entity Do
+		if h._doFn == nil { // return if h._doFn is nil
+			return nil
+		}
+		tmpOut, err := h._doFn() // call h._entity Do
 		if err != nil {
 			h._errChain.SetError(err)
 		}
@@ -85,6 +95,10 @@ func (h *Onebehaviorentity) Out(out interface{}) (err error) {
 		return err
 	}
 
+	if out == nil { //或略输出
+		return nil
+	}
+
 	b, err := json.Marshal(h.out)
 	if err != nil {
 		h._errChain.SetError(err)
@@ -92,12 +106,6 @@ func (h *Onebehaviorentity) Out(out interface{}) (err error) {
 	}
 	h._errChain.SetError(json.Unmarshal(b, out))
 	return nil
-}
-
-func (h *Onebehaviorentity) Do() (out interface{}, err error) {
-
-	//h._entity  Implementation business logic
-	return
 }
 
 func (h *Onebehaviorentity) validatInput() {
