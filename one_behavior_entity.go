@@ -2,8 +2,10 @@ package onebehaviorentity
 
 import (
 	"encoding/json"
+	"reflect"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
+	"github.com/pkg/errors"
 	"github.com/suifengpiao14/errorformatter"
 	"github.com/suifengpiao14/jsonschemaline"
 	"github.com/suifengpiao14/templatemap/util"
@@ -110,12 +112,24 @@ func (h *Onebehaviorentity) Out(out interface{}) (errInterface ErrorInterface) {
 	if out == nil { //ignore output
 		return h
 	}
-	b, err := json.Marshal(h.out)
-	if err != nil {
-		h._errChain.SetError(err)
-		return h
+
+	switch h.out.(type) {
+	case int, string:
+		rv := reflect.Indirect(reflect.ValueOf(out))
+		if !rv.CanSet() {
+			err := errors.Errorf("reflect.ValueOf(out).CanSet() must true (%v)", out)
+			h._errChain.SetError(err)
+			return h
+		}
+		rv.Set(reflect.Indirect(reflect.ValueOf(h.out)))
+	default:
+		b, err := json.Marshal(h.out)
+		if err != nil {
+			h._errChain.SetError(err)
+			return h
+		}
+		h._errChain.SetError(json.Unmarshal(b, out))
 	}
-	h._errChain.SetError(json.Unmarshal(b, out))
 	return h
 }
 
