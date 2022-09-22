@@ -3,6 +3,7 @@ package onebehaviorentity
 import (
 	"encoding/json"
 
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/suifengpiao14/errorformatter"
 	"github.com/suifengpiao14/jsonschemaline"
 	"github.com/suifengpiao14/templatemap/util"
@@ -18,6 +19,10 @@ type OnebehaviorentityInterface interface {
 	Build(entity OnebehaviorentityInInterface, attrSchema string, outSchema string, doFn func() (out interface{}, err error)) (stepIn OnebehaviorentityInInterface)
 	//InJsonSchema get attr validate jsonschema,pure function
 	InJsonSchema() (jsonschema string, err error)
+
+	//Merge after behavior change some entity attribute,use Merge to merge changes into original input function Merge usually used in doFn()
+	Merge() (jsonByte []byte, err error)
+
 	ErrorInterface
 }
 
@@ -131,6 +136,20 @@ func (h *Onebehaviorentity) InJsonSchema() (schema string, err error) {
 		return "", err
 	}
 	return schema, nil
+}
+
+func (h *Onebehaviorentity) Merge() (jsonByte []byte, err error) {
+	newJosnByte, err := json.Marshal(h)
+	if err != nil {
+		h._errChain.SetError(err)
+		return nil, err
+	}
+	jsonByte, err = jsonpatch.MergePatch(h.input, newJosnByte)
+	if err != nil {
+		h._errChain.SetError(err)
+		return nil, err
+	}
+	return jsonByte, nil
 }
 
 func (h *Onebehaviorentity) validatInput() {
