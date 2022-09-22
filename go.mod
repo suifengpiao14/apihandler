@@ -3,6 +3,7 @@ module github.com/suifengpiao14/onebehaviorentity
 go 1.17
 
 require (
+	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/suifengpiao14/errorformatter v0.0.0-20220805093941-0d4fc897ee73
 	github.com/suifengpiao14/jsonschemaline v0.0.3
 	github.com/suifengpiao14/templatemap v1.1.0
@@ -11,7 +12,6 @@ require (
 
 require (
 	github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598 // indirect
-	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
