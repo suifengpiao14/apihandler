@@ -7,7 +7,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/suifengpiao14/errorformatter v0.0.0-20220805093941-0d4fc897ee73
 	github.com/suifengpiao14/jsonschemaline v0.0.3
-	github.com/suifengpiao14/templatemap v1.1.0
+	github.com/suifengpiao14/templatemap v1.1.1
 	github.com/xeipuuv/gojsonschema v1.2.0
 )
 
