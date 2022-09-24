@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/evanphx/json-patch/v5 v5.6.0
+	github.com/pkg/errors v0.9.1
 	github.com/suifengpiao14/errorformatter v0.0.0-20220805093941-0d4fc897ee73
 	github.com/suifengpiao14/jsonschemaline v0.0.3
 	github.com/suifengpiao14/templatemap v1.1.0
@@ -17,7 +18,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/sigurn/crc16 v0.0.0-20211026045750-20ab5afb07e3 // indirect
 	github.com/tidwall/gjson v1.14.1 // indirect
