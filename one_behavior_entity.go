@@ -148,7 +148,7 @@ func (h *Onebehaviorentity) InJsonSchema() (schema string, err error) {
 }
 
 func (h *Onebehaviorentity) Merge() (jsonByte []byte, err error) {
-	newJosnByte, err := json.Marshal(h)
+	newJosnByte, err := json.Marshal(h._entity)
 	if err != nil {
 		h._errChain.SetError(err)
 		return nil, err
