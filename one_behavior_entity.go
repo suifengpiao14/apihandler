@@ -18,22 +18,18 @@ import (
 
 type OnebehaviorentityInterface interface {
 	//Build set attribute,out linejsonschema,and _errChain, entity should be ref to change attribute value, pure function
-	Build(entity OnebehaviorentityInInterface, attrSchema string, outSchema string, doFn func() (out interface{}, err error)) (stepIn OnebehaviorentityInInterface)
+	Build(entity OnebehaviorentityInterface, attrSchema string, outSchema string, doFn func() (out interface{}, err error)) (instanceEntity OnebehaviorentityInterface)
 	//InJsonSchema get attr validate jsonschema,pure function
 	InJsonSchema() (jsonschema string, err error)
 
 	//Merge after behavior change some entity attribute,use Merge to merge changes into original input function Merge usually used in doFn()
 	Merge() (jsonByte []byte, err error)
-
-	ErrorInterface
-}
-
-type OnebehaviorentityInInterface interface {
 	//In set input  pure function
 	In(input []byte) (stepDo OnebehaviorentityDoInterface)
-	//Error get error
+
 	ErrorInterface
 }
+
 type OnebehaviorentityDoInterface interface {
 	//Do exec logic,have side effect
 	Do() (stepOut OnebehaviorentityOutInterface)
@@ -60,14 +56,13 @@ type Onebehaviorentity struct {
 	attrSchema string
 	out        interface{}
 	outSchema  string
-	_entity    OnebehaviorentityInInterface
+	_entity    OnebehaviorentityInterface
 	_errChain  errorformatter.ErrorChain
-	_isDone    bool
 	_doFn      func() (out interface{}, err error)
 }
 
 //Build 初始化实体，封装 输入输出验证格式，纯函数
-func (h *Onebehaviorentity) Build(entity OnebehaviorentityInInterface, attrSchema string, outSchema string, doFn func() (out interface{}, err error)) (stepIn OnebehaviorentityInInterface) {
+func (h *Onebehaviorentity) Build(entity OnebehaviorentityInterface, attrSchema string, outSchema string, doFn func() (out interface{}, err error)) (instanceEntity OnebehaviorentityInterface) {
 	h.attrSchema = attrSchema
 	h.outSchema = outSchema
 	h._entity = entity
@@ -153,7 +148,7 @@ func (h *Onebehaviorentity) InJsonSchema() (schema string, err error) {
 }
 
 func (h *Onebehaviorentity) Merge() (jsonByte []byte, err error) {
-	newJosnByte, err := json.Marshal(h)
+	newJosnByte, err := json.Marshal(h._entity)
 	if err != nil {
 		h._errChain.SetError(err)
 		return nil, err

@@ -133,8 +133,8 @@ github.com/suifengpiao14/errorformatter v0.0.0-20220805093941-0d4fc897ee73 h1:ZF
 github.com/suifengpiao14/errorformatter v0.0.0-20220805093941-0d4fc897ee73/go.mod h1:0iy+ug3oj3DuO4Qie7j7bklK0mJh19oc6ebMjruXYrw=
 github.com/suifengpiao14/jsonschemaline v0.0.3 h1:VZoMdSqhgZBIT2JkaIsRrz6aEoNqtlBCPAriCLL9p9c=
 github.com/suifengpiao14/jsonschemaline v0.0.3/go.mod h1:R1QLL3QMpc2T0opNLkKHBW3/l7z4LxdzP/bFzgamn4M=
-github.com/suifengpiao14/templatemap v1.1.0 h1:A2hCQxOIV/9heHG5a9RUXJuuac+4NVb8AelMPkX9hDM=
-github.com/suifengpiao14/templatemap v1.1.0/go.mod h1:sexhIM9T+D0zBA0/WAbkhP5fMGZKzDtKHpE7bmQa6ig=
+github.com/suifengpiao14/templatemap v1.1.1 h1:RF8htAUBUxNB4Ps+h1UL43Py0mXXOyB366pt2gwSevA=
+github.com/suifengpiao14/templatemap v1.1.1/go.mod h1:sexhIM9T+D0zBA0/WAbkhP5fMGZKzDtKHpE7bmQa6ig=
 github.com/tidwall/gjson v1.12.1/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/gjson v1.14.1 h1:iymTbGkQBhveq21bEvAQ81I0LEBork8BFe1CUZXdyuo=
 github.com/tidwall/gjson v1.14.1/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
