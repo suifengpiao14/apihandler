@@ -40,6 +40,8 @@ type OnebehaviorentityDoInterface interface {
 type OnebehaviorentityOutInterface interface {
 	//Out get output,pure function
 	Out(out interface{}) (errInterface ErrorInterface)
+	//Error get error
+	ErrorInterface
 }
 
 type ErrorInterface interface {
@@ -61,7 +63,7 @@ type Onebehaviorentity struct {
 	_doFn      func() (out interface{}, err error)
 }
 
-//Build 初始化实体，封装 输入输出验证格式，纯函数
+// Build 初始化实体，封装 输入输出验证格式，纯函数
 func (h *Onebehaviorentity) Build(entity OnebehaviorentityInterface, attrSchema string, outSchema string, doFn func() (out interface{}, err error)) (instanceEntity OnebehaviorentityInterface) {
 	h.attrSchema = attrSchema
 	h.outSchema = outSchema
@@ -71,7 +73,7 @@ func (h *Onebehaviorentity) Build(entity OnebehaviorentityInterface, attrSchema 
 	return h
 }
 
-//In 接收参数，并且验证参数，是纯函数，和Do 分开，方便批量提前验证入参，之后异步执行Do方法
+// In 接收参数，并且验证参数，是纯函数，和Do 分开，方便批量提前验证入参，之后异步执行Do方法
 func (h *Onebehaviorentity) In(input []byte) (stepDo OnebehaviorentityDoInterface) {
 	h.input = input
 	h.validatInput()
@@ -87,7 +89,7 @@ func (h *Onebehaviorentity) In(input []byte) (stepDo OnebehaviorentityDoInterfac
 	return h
 }
 
-//Do 执行业务逻辑，可能有副作用操作(数据存储),所以和Out分开
+// Do 执行业务逻辑，可能有副作用操作(数据存储),所以和Out分开
 func (h *Onebehaviorentity) Do() (stepOut OnebehaviorentityOutInterface) {
 	if h._errChain.Error() != nil {
 		return h
@@ -98,7 +100,7 @@ func (h *Onebehaviorentity) Do() (stepOut OnebehaviorentityOutInterface) {
 	return h
 }
 
-//Out 获取返回，纯函数，和Do分开，其一从Do中提取纯函数部分，其二对有些不关心返回结果的Do省略输出转换步骤
+// Out 获取返回，纯函数，和Do分开，其一从Do中提取纯函数部分，其二对有些不关心返回结果的Do省略输出转换步骤
 func (h *Onebehaviorentity) Out(out interface{}) (errInterface ErrorInterface) {
 	h.validateOutput()
 	if h.Error() != nil {
