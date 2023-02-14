@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	github.com/evanphx/json-patch/v5 v5.6.0
-	github.com/jmoiron/sqlx v1.3.5
 	github.com/pkg/errors v0.9.1
 	github.com/suifengpiao14/errorformatter v0.0.0-20220805093941-0d4fc897ee73
 	github.com/suifengpiao14/jsonschemaline v0.0.3
