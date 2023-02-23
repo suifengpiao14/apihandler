@@ -3,16 +3,10 @@ package example
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/suifengpiao14/controllerhandler"
 )
 
-func AdListDoFn(ctx context.Context, handler controllerhandler.Handler) (controllerhandler.OutputI, error) {
-	i, ok := handler.HandlerInterface.(*AdListInput)
-	if !ok {
-		err := errors.Errorf("handler must be AdListInput")
-		return nil, err
-	}
+func AdListDoFn(ctx context.Context, i AdListInput) (controllerhandler.OutputI, error) {
 	output := i.Output
 	output.Code = "200"
 	output.Message = "ok"

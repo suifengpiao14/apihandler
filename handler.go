@@ -3,10 +3,12 @@ package controllerhandler
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/pkg/errors"
 )
 
 type HandlerInterface interface {
-	GetDoFn() func(ctx context.Context, handler Handler) (out OutputI, err error)
+	GetDoFn() func(ctx context.Context) (out OutputI, err error)
 	GetLineSchemaInput() (lineschema string)
 	GetLineSchemaOutput() (lineschema string)
 }
@@ -74,6 +76,15 @@ func (a Handler) outputValidate(output string) (err error) {
 }
 
 func (a Handler) Run(ctx context.Context, input string) (out string, err error) {
+
+	if a.HandlerInterface == nil {
+		err = errors.Errorf("handlerInterface required %v", a)
+		return "", err
+	}
+	if a.HandlerInterface.GetDoFn() == nil { //此处只先判断,不取值,等后续将input值填充后再获取
+		err = errors.Errorf("doFn required %v", a.HandlerInterface)
+		return "", err
+	}
 	err = a.inputValidate(input)
 	if err != nil {
 		return "", err
@@ -83,7 +94,7 @@ func (a Handler) Run(ctx context.Context, input string) (out string, err error) 
 		return "", err
 	}
 	doFn := a.HandlerInterface.GetDoFn()
-	outI, err := doFn(ctx, a)
+	outI, err := doFn(ctx)
 	if err != nil {
 		return "", err
 	}

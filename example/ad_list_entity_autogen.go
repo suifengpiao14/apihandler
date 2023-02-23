@@ -14,7 +14,7 @@ type AdListInput struct {
 	Index       int          `json:"index,string"`
 	Size        int          `json:"size,string"`
 	Output      AdListOutput `json:"-"`
-	doFn        func(ctx context.Context, handler controllerhandler.Handler) (out controllerhandler.OutputI, err error)
+	doFn        func(ctx context.Context, handler AdListInput) (out controllerhandler.OutputI, err error)
 }
 
 type AdListOutput struct {
@@ -49,11 +49,13 @@ func (o AdListOutput) String() (out string, err error) {
 }
 
 // 提供外部设置doFn 入口
-func (i *AdListInput) SetDoFn(doFn func(ctx context.Context, handler controllerhandler.Handler) (out controllerhandler.OutputI, err error)) {
+func (i *AdListInput) SetDoFn(doFn func(ctx context.Context, handler AdListInput) (out controllerhandler.OutputI, err error)) {
 	i.doFn = doFn
 }
-func (i AdListInput) GetDoFn() (doFn func(ctx context.Context, handler controllerhandler.Handler) (out controllerhandler.OutputI, err error)) {
-	return i.doFn
+func (i AdListInput) GetDoFn() (doFn func(ctx context.Context) (out controllerhandler.OutputI, err error)) {
+	return func(ctx context.Context) (out controllerhandler.OutputI, err error) {
+		return i.doFn(ctx, i)
+	}
 }
 func (i AdListInput) GetLineSchemaInput() (lineschema string) {
 	lineschema = `
