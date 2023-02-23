@@ -1,6 +1,8 @@
 package example
 
 import (
+	"context"
+
 	"github.com/suifengpiao14/controllerhandler"
 )
 
@@ -12,6 +14,7 @@ type AdListInput struct {
 	Index       int          `json:"index,string"`
 	Size        int          `json:"size,string"`
 	Output      AdListOutput `json:"-"`
+	doFn        func(ctx context.Context, handler controllerhandler.Handler) (out controllerhandler.OutputI, err error)
 }
 
 type AdListOutput struct {
@@ -45,6 +48,13 @@ func (o AdListOutput) String() (out string, err error) {
 	return controllerhandler.JsonMarshal(o)
 }
 
+// 提供外部设置doFn 入口
+func (i *AdListInput) SetDoFn(doFn func(ctx context.Context, handler controllerhandler.Handler) (out controllerhandler.OutputI, err error)) {
+	i.doFn = doFn
+}
+func (i AdListInput) GetDoFn() (doFn func(ctx context.Context, handler controllerhandler.Handler) (out controllerhandler.OutputI, err error)) {
+	return i.doFn
+}
 func (i AdListInput) GetLineSchemaInput() (lineschema string) {
 	lineschema = `
 	version=http://json-schema.org/draft-07/schema#,id=in,direction=in

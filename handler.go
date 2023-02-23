@@ -6,9 +6,9 @@ import (
 )
 
 type HandlerInterface interface {
+	GetDoFn() func(ctx context.Context, handler Handler) (out OutputI, err error)
 	GetLineSchemaInput() (lineschema string)
 	GetLineSchemaOutput() (lineschema string)
-	Do(ctx context.Context) (out OutputI, err error)
 }
 
 type OutputI interface {
@@ -30,7 +30,7 @@ type Handler struct {
 	validateOutput *Validate
 }
 
-//NewHandler 创建处理器，内部逻辑在接收请求前已经确定，后续不变，所以有错误直接panic ，能正常启动后，这部分不会出现错误
+// NewHandler 创建处理器，内部逻辑在接收请求前已经确定，后续不变，所以有错误直接panic ，能正常启动后，这部分不会出现错误
 func NewHandler(handlerInterface HandlerInterface) (handler *Handler) {
 	var inputValidateI ValidateIFn = func() (lineschema string) {
 		return handlerInterface.GetLineSchemaInput()
@@ -82,7 +82,8 @@ func (a Handler) Run(ctx context.Context, input string) (out string, err error) 
 	if err != nil {
 		return "", err
 	}
-	outI, err := a.HandlerInterface.Do(ctx)
+	doFn := a.HandlerInterface.GetDoFn()
+	outI, err := doFn(ctx, a)
 	if err != nil {
 		return "", err
 	}

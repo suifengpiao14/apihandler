@@ -10,6 +10,7 @@ func NewAdListHandler() (handler *controllerhandler.Handler, err error) {
 	adListInput := &AdListInput{
 		Output: AdListOutput{},
 	}
+	adListInput.SetDoFn(AdListDoFn)
 	handler = controllerhandler.NewHandler(adListInput)
 	return handler, nil
 }
