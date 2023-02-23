@@ -1,4 +1,4 @@
-package onebehaviorentity
+package controllerhandler
 
 import (
 	"github.com/suifengpiao14/jsonschemaline"
@@ -35,6 +35,9 @@ func NewValidate(validateI ValidateI) (validate *Validate, err error) {
 
 func (v *Validate) init() (err error) {
 	lineSchemaStr := v.GetLineSchema()
+	if lineSchemaStr == "" {
+		return
+	}
 	inputlineSchema, err := jsonschemaline.ParseJsonschemaline(lineSchemaStr)
 	if err != nil {
 		return err
