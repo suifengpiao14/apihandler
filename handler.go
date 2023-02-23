@@ -3,11 +3,13 @@ package controllerhandler
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 
 	"github.com/pkg/errors"
 )
 
 type HandlerInterface interface {
+	GetName() (name string)
 	GetDoFn() func(ctx context.Context) (out OutputI, err error)
 	GetLineSchemaInput() (lineschema string)
 	GetLineSchemaOutput() (lineschema string)
@@ -32,14 +34,27 @@ type Handler struct {
 	validateOutput *Validate
 }
 
+var handlerMap map[string]*Handler = make(map[string]*Handler)
+
 // NewHandler 创建处理器，内部逻辑在接收请求前已经确定，后续不变，所以有错误直接panic ，能正常启动后，这部分不会出现错误
-func NewHandler(handlerInterface HandlerInterface) (handler *Handler) {
+func NewHandler(handlerInterface HandlerInterface) (handler *Handler, err error) {
+	if existsHandler, ok := handlerMap[handlerInterface.GetName()]; ok {
+		handler = &Handler{HandlerInterface: handlerInterface, validateInput: existsHandler.validateInput, validateOutput: existsHandler.validateOutput}
+		return handler, nil
+	}
+	// 以下初始化可以复用,线程安全
+	rt := reflect.TypeOf(handlerInterface)
+	kind := rt.Kind()
+	if kind != reflect.Ptr {
+		err = errors.Errorf("want:Ptr,got:%s", kind)
+		return nil, err
+	}
 	var inputValidateI ValidateIFn = func() (lineschema string) {
 		return handlerInterface.GetLineSchemaInput()
 	}
 	validateInput, err := NewValidate(inputValidateI)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	var outputValidateI ValidateIFn = func() (lineschema string) {
@@ -47,15 +62,11 @@ func NewHandler(handlerInterface HandlerInterface) (handler *Handler) {
 	}
 	validateOutput, err := NewValidate(outputValidateI)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-
 	handler = &Handler{HandlerInterface: handlerInterface, validateInput: validateInput, validateOutput: validateOutput}
-	if err != nil {
-		panic(err)
-	}
-
-	return handler
+	handlerMap[handlerInterface.GetName()] = handler
+	return handler, nil
 }
 
 func (a Handler) inputValidate(input string) (err error) {
@@ -69,6 +80,14 @@ func (a Handler) inputValidate(input string) (err error) {
 func (a Handler) outputValidate(output string) (err error) {
 	outputStr := string(output)
 	err = a.validateOutput.Validate(outputStr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a Handler) convertInput(input string) (err error) {
+	err = json.Unmarshal([]byte(input), a.HandlerInterface)
 	if err != nil {
 		return err
 	}
@@ -89,7 +108,7 @@ func (a Handler) Run(ctx context.Context, input string) (out string, err error) 
 	if err != nil {
 		return "", err
 	}
-	err = json.Unmarshal([]byte(input), a.HandlerInterface)
+	err = a.convertInput(input)
 	if err != nil {
 		return "", err
 	}

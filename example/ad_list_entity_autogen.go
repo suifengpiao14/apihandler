@@ -14,7 +14,7 @@ type AdListInput struct {
 	Index       int          `json:"index,string"`
 	Size        int          `json:"size,string"`
 	Output      AdListOutput `json:"-"`
-	doFn        func(ctx context.Context, handler AdListInput) (out controllerhandler.OutputI, err error)
+	doFn        func(ctx context.Context, handler *AdListInput) (out controllerhandler.OutputI, err error)
 }
 
 type AdListOutput struct {
@@ -49,15 +49,18 @@ func (o AdListOutput) String() (out string, err error) {
 }
 
 // 提供外部设置doFn 入口
-func (i *AdListInput) SetDoFn(doFn func(ctx context.Context, handler AdListInput) (out controllerhandler.OutputI, err error)) {
+func (i *AdListInput) SetDoFn(doFn func(ctx context.Context, handler *AdListInput) (out controllerhandler.OutputI, err error)) {
 	i.doFn = doFn
 }
-func (i AdListInput) GetDoFn() (doFn func(ctx context.Context) (out controllerhandler.OutputI, err error)) {
+func (i *AdListInput) GetName() (name string) {
+	return "AdList"
+}
+func (i *AdListInput) GetDoFn() (doFn func(ctx context.Context) (out controllerhandler.OutputI, err error)) {
 	return func(ctx context.Context) (out controllerhandler.OutputI, err error) {
 		return i.doFn(ctx, i)
 	}
 }
-func (i AdListInput) GetLineSchemaInput() (lineschema string) {
+func (i *AdListInput) GetLineSchemaInput() (lineschema string) {
 	lineschema = `
 	version=http://json-schema.org/draft-07/schema#,id=in,direction=in
 	fullname=title,dst=title,required,description=广告标题,comment=广告标题,example=新年豪礼
@@ -73,7 +76,7 @@ func (i AdListInput) GetLineSchemaInput() (lineschema string) {
 	return
 }
 
-func (i AdListInput) GetLineSchemaOutput() (lineschema string) {
+func (i *AdListInput) GetLineSchemaOutput() (lineschema string) {
 	lineschema = `
 	version=http://json-schema.org/draft-07/schema#,id=out,direction=out
 	fullname=code,src=code,description=业务状态码,comment=业务状态码,example=0

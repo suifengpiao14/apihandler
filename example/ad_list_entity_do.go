@@ -6,7 +6,7 @@ import (
 	"github.com/suifengpiao14/controllerhandler"
 )
 
-func AdListDoFn(ctx context.Context, input AdListInput) (controllerhandler.OutputI, error) {
+func AdListDoFn(ctx context.Context, input *AdListInput) (controllerhandler.OutputI, error) {
 	output := input.Output
 	output.Code = "200"
 	output.Message = "ok"

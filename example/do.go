@@ -6,21 +6,23 @@ import (
 	"github.com/suifengpiao14/controllerhandler"
 )
 
-func NewAdListHandler() (handler *controllerhandler.Handler, err error) {
-	adListInput := &AdListInput{
-		Output: AdListOutput{},
-	}
+type RequestID string
+
+func NewAdListInput() (adListInput *AdListInput) {
+	adListInput = &AdListInput{}
 	adListInput.SetDoFn(AdListDoFn)
-	handler = controllerhandler.NewHandler(adListInput)
-	return handler, nil
+	return adListInput
 }
 
 func Run(ctx context.Context, input string) (out string, err error) {
-	adListHandler, err := NewAdListHandler()
+	key := RequestID("request_id")
+	ctx = context.WithValue(ctx, key, "hello_world")
+	adListInput := NewAdListInput()
+	handler, err := controllerhandler.NewHandler(adListInput)
 	if err != nil {
 		return "", err
 	}
-	out, err = adListHandler.Run(ctx, input)
+	out, err = handler.Run(ctx, input)
 	if err != nil {
 		return "", err
 	}
