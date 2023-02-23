@@ -3,6 +3,7 @@ module github.com/suifengpiao14/controllerhandler
 go 1.17
 
 require (
+	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.1
 	github.com/suifengpiao14/jsonschemaline v0.0.20
 	github.com/suifengpiao14/templatemap v1.1.1
@@ -18,7 +19,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/suifengpiao14/kvstruct v0.0.0-20230222094254-af4e4c2a21cd // indirect
