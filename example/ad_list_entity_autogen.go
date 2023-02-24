@@ -52,9 +52,7 @@ func (o AdListOutput) String() (out string, err error) {
 func (i *AdListInput) SetDoFn(doFn func(ctx context.Context, handler *AdListInput) (out controllerhandler.OutputI, err error)) {
 	i.doFn = doFn
 }
-func (i *AdListInput) GetName() (name string) {
-	return "AdList"
-}
+
 func (i *AdListInput) GetDoFn() (doFn func(ctx context.Context) (out controllerhandler.OutputI, err error)) {
 	return func(ctx context.Context) (out controllerhandler.OutputI, err error) {
 		return i.doFn(ctx, i)

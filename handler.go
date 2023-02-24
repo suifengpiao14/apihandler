@@ -3,13 +3,13 @@ package controllerhandler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
 )
 
 type HandlerInterface interface {
-	GetName() (name string)
 	GetDoFn() func(ctx context.Context) (out OutputI, err error)
 	GetLineSchemaInput() (lineschema string)
 	GetLineSchemaOutput() (lineschema string)
@@ -38,17 +38,19 @@ var handlerMap map[string]*Handler = make(map[string]*Handler)
 
 // NewHandler 创建处理器，内部逻辑在接收请求前已经确定，后续不变，所以有错误直接panic ，能正常启动后，这部分不会出现错误
 func NewHandler(handlerInterface HandlerInterface) (handler *Handler, err error) {
-	if existsHandler, ok := handlerMap[handlerInterface.GetName()]; ok {
-		handler = &Handler{HandlerInterface: handlerInterface, validateInput: existsHandler.validateInput, validateOutput: existsHandler.validateOutput}
-		return handler, nil
-	}
-	// 以下初始化可以复用,线程安全
 	rt := reflect.TypeOf(handlerInterface)
 	kind := rt.Kind()
 	if kind != reflect.Ptr {
 		err = errors.Errorf("want:Ptr,got:%s", kind)
 		return nil, err
 	}
+	rtE := rt.Elem()
+	key := fmt.Sprintf("%s.%s", rtE.PkgPath(), rtE.Name())
+	if existsHandler, ok := handlerMap[key]; ok {
+		handler = &Handler{HandlerInterface: handlerInterface, validateInput: existsHandler.validateInput, validateOutput: existsHandler.validateOutput}
+		return handler, nil
+	}
+	// 以下初始化可以复用,线程安全
 	var inputValidateI ValidateIFn = func() (lineschema string) {
 		return handlerInterface.GetLineSchemaInput()
 	}
@@ -65,7 +67,7 @@ func NewHandler(handlerInterface HandlerInterface) (handler *Handler, err error)
 		return nil, err
 	}
 	handler = &Handler{HandlerInterface: handlerInterface, validateInput: validateInput, validateOutput: validateOutput}
-	handlerMap[handlerInterface.GetName()] = handler
+	handlerMap[key] = handler
 	return handler, nil
 }
 
