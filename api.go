@@ -8,6 +8,9 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/suifengpiao14/jsonschemaline"
+	"github.com/suifengpiao14/templatemap/util"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 type ApiInterface interface {
@@ -42,8 +45,8 @@ func JsonMarshal(o interface{}) (out string, err error) {
 
 type Api struct {
 	ApiInterface
-	validateInput  *Validate
-	validateOutput *Validate
+	validateInputLoader  gojsonschema.JSONLoader
+	validateOutputLoader gojsonschema.JSONLoader
 }
 
 var apiMap sync.Map
@@ -60,33 +63,35 @@ func NewApi(apiInterface ApiInterface) (api *Api, err error) {
 	key := fmt.Sprintf("%s.%s", rtE.PkgPath(), rtE.Name())
 	if apiI, ok := apiMap.Load(key); ok {
 		exitsApi := apiI.(*Api)
-		api = &Api{ApiInterface: apiInterface, validateInput: exitsApi.validateInput, validateOutput: exitsApi.validateOutput}
+		api = &Api{ApiInterface: apiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
 		return api, nil
 	}
-	// 以下初始化可以复用,线程安全
-	var inputValidateI ValidateIFn = func() (lineschema string) {
-		return apiInterface.GetInputSchema()
-	}
-	validateInput, err := NewValidate(inputValidateI)
-	if err != nil {
-		return nil, err
-	}
 
-	var outputValidateI ValidateIFn = func() (lineschema string) {
-		return apiInterface.GetOutputSchema()
+	// 以下初始化可以复用,线程安全
+	api = &Api{
+		ApiInterface: apiInterface,
 	}
-	validateOutput, err := NewValidate(outputValidateI)
-	if err != nil {
-		return nil, err
+	inputSchema := apiInterface.GetInputSchema()
+	if inputSchema != "" {
+		api.validateInputLoader, err = NewJsonschemaLoader(inputSchema)
+		if err != nil {
+			return nil, err
+		}
 	}
-	api = &Api{ApiInterface: apiInterface, validateInput: validateInput, validateOutput: validateOutput}
+	outputSchema := apiInterface.GetOutputSchema()
+	if outputSchema != "" {
+		api.validateOutputLoader, err = NewJsonschemaLoader(outputSchema)
+		if err != nil {
+			return nil, err
+		}
+	}
 	apiMap.Store(key, api)
 	return api, nil
 }
 
 func (a Api) inputValidate(input string) (err error) {
 	inputStr := string(input)
-	err = a.validateInput.Validate(inputStr)
+	err = util.Validate(inputStr, a.validateInputLoader)
 	if err != nil {
 		return err
 	}
@@ -94,7 +99,7 @@ func (a Api) inputValidate(input string) (err error) {
 }
 func (a Api) outputValidate(output string) (err error) {
 	outputStr := string(output)
-	err = a.validateOutput.Validate(outputStr)
+	err = util.Validate(outputStr, a.validateOutputLoader)
 	if err != nil {
 		return err
 	}
@@ -141,4 +146,22 @@ func (a Api) Run(ctx context.Context, input string) (out string, err error) {
 		return "", err
 	}
 	return out, nil
+}
+
+func NewJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JSONLoader, err error) {
+	if lineSchemaStr == "" {
+		err = errors.Errorf("NewJsonschemaLoader: arg lineSchemaStr required,got empty")
+		return nil, err
+	}
+	inputlineSchema, err := jsonschemaline.ParseJsonschemaline(lineSchemaStr)
+	if err != nil {
+		return nil, err
+	}
+	jsb, err := inputlineSchema.JsonSchema()
+	if err != nil {
+		return nil, err
+	}
+	jsonschemaStr := string(jsb)
+	jsonschemaLoader = gojsonschema.NewStringLoader(jsonschemaStr)
+	return jsonschemaLoader, nil
 }
