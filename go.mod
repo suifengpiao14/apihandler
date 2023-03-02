@@ -1,4 +1,4 @@
-module github.com/suifengpiao14/controllerhandler
+module github.com/suifengpiao14/apihandler
 
 go 1.17
 

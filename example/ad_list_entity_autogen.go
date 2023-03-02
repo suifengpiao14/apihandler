@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/suifengpiao14/controllerhandler"
+	"github.com/suifengpiao14/apihandler"
 )
 
 type AdListInput struct {
@@ -15,7 +15,7 @@ type AdListInput struct {
 	Index       int          `json:"index,string"`
 	Size        int          `json:"size,string"`
 	Output      AdListOutput `json:"-"`
-	doFn        func(ctx context.Context, handler *AdListInput) (out controllerhandler.OutputI, err error)
+	doFn        func(ctx context.Context, handler *AdListInput) (out apihandler.OutputI, err error)
 }
 
 type AdListOutput struct {
@@ -46,16 +46,16 @@ type Pagination struct {
 }
 
 func (o AdListOutput) String() (out string, err error) {
-	return controllerhandler.JsonMarshal(o)
+	return apihandler.JsonMarshal(o)
 }
 
 // 提供外部设置doFn 入口
-func (i *AdListInput) SetDoFn(doFn func(ctx context.Context, handler *AdListInput) (out controllerhandler.OutputI, err error)) {
+func (i *AdListInput) SetDoFn(doFn func(ctx context.Context, handler *AdListInput) (out apihandler.OutputI, err error)) {
 	i.doFn = doFn
 }
 
-func (i *AdListInput) GetDoFn() (doFn func(ctx context.Context) (out controllerhandler.OutputI, err error)) {
-	return func(ctx context.Context) (out controllerhandler.OutputI, err error) {
+func (i *AdListInput) GetDoFn() (doFn func(ctx context.Context) (out apihandler.OutputI, err error)) {
+	return func(ctx context.Context) (out apihandler.OutputI, err error) {
 		return i.doFn(ctx, i)
 	}
 }

@@ -3,10 +3,10 @@ package example
 import (
 	"context"
 
-	"github.com/suifengpiao14/controllerhandler"
+	"github.com/suifengpiao14/apihandler"
 )
 
-func AdListDoFn(ctx context.Context, input *AdListInput) (controllerhandler.OutputI, error) {
+func AdListDoFn(ctx context.Context, input *AdListInput) (apihandler.OutputI, error) {
 	output := input.Output
 	output.Code = "200"
 	output.Message = "ok"

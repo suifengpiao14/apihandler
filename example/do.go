@@ -3,7 +3,7 @@ package example
 import (
 	"context"
 
-	"github.com/suifengpiao14/controllerhandler"
+	"github.com/suifengpiao14/apihandler"
 )
 
 type RequestID string
@@ -18,7 +18,7 @@ func Run(ctx context.Context, input string) (out string, err error) {
 	key := RequestID("request_id")
 	ctx = context.WithValue(ctx, key, "hello_world")
 	adListInput := NewAdListInput()
-	handler, err := controllerhandler.NewApi(adListInput)
+	handler, err := apihandler.NewApi(adListInput)
 	if err != nil {
 		return "", err
 	}

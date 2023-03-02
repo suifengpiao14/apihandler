@@ -1,4 +1,4 @@
-package controllerhandler
+package apihandler
 
 import (
 	"context"
@@ -110,7 +110,7 @@ func (act SQLActuator) Exec(ctx context.Context, out interface{}) (err error) {
 	return nil
 }
 
-//SQLType 判断 sql  属于那种类型
+// SQLType 判断 sql  属于那种类型
 func SQLType(sqls string) string {
 	sqlArr := strings.Split(sqls, EOF)
 	selectLen := len(SQL_TYPE_SELECT)
@@ -126,7 +126,7 @@ func SQLType(sqls string) string {
 	return SQL_TYPE_OTHER
 }
 
-//MapScan copy sqlx
+// MapScan copy sqlx
 func MapScan(r sql.Rows, dest map[string]interface{}) error {
 	// ignore r.started, since we needn't use reflect for anything.
 	columns, err := r.Columns()
