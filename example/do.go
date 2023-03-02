@@ -18,7 +18,7 @@ func Run(ctx context.Context, input string) (out string, err error) {
 	key := RequestID("request_id")
 	ctx = context.WithValue(ctx, key, "hello_world")
 	adListInput := NewAdListInput()
-	handler, err := controllerhandler.NewHandler(adListInput)
+	handler, err := controllerhandler.NewApi(adListInput)
 	if err != nil {
 		return "", err
 	}

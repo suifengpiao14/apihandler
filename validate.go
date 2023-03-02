@@ -1,6 +1,7 @@
 package controllerhandler
 
 import (
+	"github.com/pkg/errors"
 	"github.com/suifengpiao14/jsonschemaline"
 	"github.com/suifengpiao14/templatemap/util"
 	"github.com/xeipuuv/gojsonschema"
@@ -62,4 +63,22 @@ func (v Validate) Validate(jsonStr string) (err error) {
 		return err
 	}
 	return nil
+}
+
+func NewJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JSONLoader, err error) {
+	if lineSchemaStr == "" {
+		err = errors.Errorf("NewJsonschemaLoader: arg lineSchemaStr required,got empty")
+		return nil, err
+	}
+	inputlineSchema, err := jsonschemaline.ParseJsonschemaline(lineSchemaStr)
+	if err != nil {
+		return nil, err
+	}
+	jsb, err := inputlineSchema.JsonSchema()
+	if err != nil {
+		return nil, err
+	}
+	jsonschemaStr := string(jsb)
+	jsonschemaLoader = gojsonschema.NewStringLoader(jsonschemaStr)
+	return jsonschemaLoader, nil
 }

@@ -2,6 +2,7 @@ package example
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/suifengpiao14/controllerhandler"
 )
@@ -58,7 +59,11 @@ func (i *AdListInput) GetDoFn() (doFn func(ctx context.Context) (out controllerh
 		return i.doFn(ctx, i)
 	}
 }
-func (i *AdListInput) GetLineSchemaInput() (lineschema string) {
+func (i *AdListInput) GetRoute() (method string, path string) {
+	path = "/api/v1/adList"
+	return http.MethodPost, path
+}
+func (i *AdListInput) GetInputSchema() (lineschema string) {
 	lineschema = `
 	version=http://json-schema.org/draft-07/schema#,id=in,direction=in
 	fullname=title,dst=title,required,description=广告标题,comment=广告标题,example=新年豪礼
@@ -74,7 +79,7 @@ func (i *AdListInput) GetLineSchemaInput() (lineschema string) {
 	return
 }
 
-func (i *AdListInput) GetLineSchemaOutput() (lineschema string) {
+func (i *AdListInput) GetOutputSchema() (lineschema string) {
 	lineschema = `
 	version=http://json-schema.org/draft-07/schema#,id=out,direction=out
 	fullname=code,src=code,description=业务状态码,comment=业务状态码,example=0
