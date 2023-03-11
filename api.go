@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/suifengpiao14/gojsonschemavalidator"
 	"github.com/suifengpiao14/jsonschemaline"
-	"github.com/suifengpiao14/templatemap/util"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -90,8 +90,11 @@ func NewApi(apiInterface ApiInterface) (api *Api, err error) {
 }
 
 func (a Api) inputValidate(input string) (err error) {
+	if a.validateInputLoader == nil {
+		return nil
+	}
 	inputStr := string(input)
-	err = util.Validate(inputStr, a.validateInputLoader)
+	err = gojsonschemavalidator.Validate(inputStr, a.validateInputLoader)
 	if err != nil {
 		return err
 	}
@@ -99,7 +102,10 @@ func (a Api) inputValidate(input string) (err error) {
 }
 func (a Api) outputValidate(output string) (err error) {
 	outputStr := string(output)
-	err = util.Validate(outputStr, a.validateOutputLoader)
+	if a.validateOutputLoader == nil {
+		return nil
+	}
+	err = gojsonschemavalidator.Validate(outputStr, a.validateOutputLoader)
 	if err != nil {
 		return err
 	}
