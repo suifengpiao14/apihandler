@@ -15,7 +15,6 @@ type AdListInput struct {
 	Index       int          `json:"index,string"`
 	Size        int          `json:"size,string"`
 	Output      AdListOutput `json:"-"`
-	doFn        func(ctx context.Context, handler *AdListInput) (out apihandler.OutputI, err error)
 }
 
 type AdListOutput struct {
@@ -49,14 +48,9 @@ func (o AdListOutput) String() (out string, err error) {
 	return apihandler.JsonMarshal(o)
 }
 
-// 提供外部设置doFn 入口
-func (i *AdListInput) SetDoFn(doFn func(ctx context.Context, handler *AdListInput) (out apihandler.OutputI, err error)) {
-	i.doFn = doFn
-}
-
 func (i *AdListInput) GetDoFn() (doFn func(ctx context.Context) (out apihandler.OutputI, err error)) {
 	return func(ctx context.Context) (out apihandler.OutputI, err error) {
-		return i.doFn(ctx, i)
+		return AdListDoFn(ctx, i)
 	}
 }
 func (i *AdListInput) GetRoute() (method string, path string) {

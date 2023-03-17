@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -17,6 +18,7 @@ type ApiInterface interface {
 	GetDoFn() func(ctx context.Context) (out OutputI, err error)
 	GetInputSchema() (lineschema string)
 	GetOutputSchema() (lineschema string)
+	GetRoute() (method string, path string)
 }
 
 type OutputI interface {
@@ -34,6 +36,11 @@ func GetApiInterfaceID(apiInterface ApiInterface) (id string) {
 	id = fmt.Sprintf("%s.%s", rtE.PkgPath(), rtE.Name())
 	return id
 }
+
+func GetRouteKey(method string, path string) (key string) {
+	return fmt.Sprintf("%s_%s", strings.ToLower(method), path)
+}
+
 func JsonMarshal(o interface{}) (out string, err error) {
 	b, err := json.Marshal(o)
 	if err != nil {
@@ -51,42 +58,41 @@ type Api struct {
 
 var apiMap sync.Map
 
-// NewApi 创建处理器，内部逻辑在接收请求前已经确定，后续不变，所以有错误直接panic ，能正常启动后，这部分不会出现错误
-func NewApi(apiInterface ApiInterface) (api *Api, err error) {
-	rt := reflect.TypeOf(apiInterface)
-	kind := rt.Kind()
-	if kind != reflect.Ptr {
-		err = errors.Errorf("want:Ptr,got:%s", kind)
-		return nil, err
-	}
-	rtE := rt.Elem()
-	key := fmt.Sprintf("%s.%s", rtE.PkgPath(), rtE.Name())
-	if apiI, ok := apiMap.Load(key); ok {
-		exitsApi := apiI.(*Api)
-		api = &Api{ApiInterface: apiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
-		return api, nil
-	}
-
+// RegisterApi 创建处理器，内部逻辑在接收请求前已经确定，后续不变，所以有错误直接panic ，能正常启动后，这部分不会出现错误
+func RegisterApi(apiInterface ApiInterface) (err error) {
+	method, path := apiInterface.GetRoute()
+	key := GetRouteKey(method, path)
 	// 以下初始化可以复用,线程安全
-	api = &Api{
+	api := &Api{
 		ApiInterface: apiInterface,
 	}
 	inputSchema := apiInterface.GetInputSchema()
 	if inputSchema != "" {
 		api.validateInputLoader, err = NewJsonschemaLoader(inputSchema)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	outputSchema := apiInterface.GetOutputSchema()
 	if outputSchema != "" {
 		api.validateOutputLoader, err = NewJsonschemaLoader(outputSchema)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	apiMap.Store(key, api)
-	return api, nil
+	return nil
+}
+
+func GetApi(method string, path string) (api Api, ok bool) {
+	key := GetRouteKey(method, path)
+	apiAny, ok := apiMap.Load(key)
+	if !ok {
+		return api, false
+	}
+	exitsApi := apiAny.(*Api)
+	api = Api{ApiInterface: exitsApi.ApiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
+	return api, true
 }
 
 func (a Api) inputValidate(input string) (err error) {
