@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"reflect"
 	"strings"
 	"sync"
@@ -11,6 +13,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suifengpiao14/gojsonschemavalidator"
 	"github.com/suifengpiao14/jsonschemaline"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -176,4 +180,58 @@ func NewJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JS
 	jsonschemaStr := string(jsb)
 	jsonschemaLoader = gojsonschema.NewStringLoader(jsonschemaStr)
 	return jsonschemaLoader, nil
+}
+
+//FormatInput 统一获取 query,header,body 参数
+func FormatInput(r *http.Request, useArrInQueryAndHead bool) (reqInput []byte, err error) {
+	reqInput = make([]byte, 0)
+	s, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		return
+	}
+	if len(s) > 0 {
+		contentType := r.Header.Get("Content-Type")
+		if strings.Contains(strings.ToLower(contentType), "application/json") {
+			if !gjson.ValidBytes(s) {
+				err = errors.Errorf("body content is invalid json")
+				return nil, err
+			}
+			reqInput = s
+		} else {
+			reqInput, err = sjson.SetBytes(reqInput, "body", s)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	for k, arr := range r.URL.Query() {
+		var value any
+		if useArrInQueryAndHead {
+			value = arr
+		} else {
+			value = arr[0]
+		}
+		reqInput, err = sjson.SetBytes(reqInput, k, value)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	headers := r.Header
+	for k, v := range headers {
+		key := fmt.Sprintf("http_%s", strings.ReplaceAll(strings.ToLower(k), "-", "_"))
+		var value any
+		if useArrInQueryAndHead {
+			value = v
+		} else {
+			value = v[0]
+		}
+		reqInput, err = sjson.SetBytes(reqInput, key, value)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return reqInput, nil
 }
