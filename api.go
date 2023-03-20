@@ -18,6 +18,8 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
+var API_NOT_FOUND = errors.Errorf("not found")
+
 type ApiInterface interface {
 	GetDoFn() func(ctx context.Context) (out OutputI, err error)
 	GetInputSchema() (lineschema string)
@@ -88,15 +90,15 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 	return nil
 }
 
-func GetApi(method string, path string) (api Api, ok bool) {
+func GetApi(method string, path string) (api Api, err error) {
 	key := GetRouteKey(method, path)
 	apiAny, ok := apiMap.Load(key)
 	if !ok {
-		return api, false
+		return api, errors.WithMessagef(API_NOT_FOUND, "method:%s,path:%s", method, path)
 	}
 	exitsApi := apiAny.(*Api)
 	api = Api{ApiInterface: exitsApi.ApiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
-	return api, true
+	return api, nil
 }
 
 func (a Api) inputValidate(input string) (err error) {

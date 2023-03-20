@@ -7,6 +7,13 @@ import (
 	"github.com/suifengpiao14/apihandler"
 )
 
+func init() {
+	err := apihandler.RegisterApi(&AdListInput{})
+	if err != nil {
+		panic(err)
+	}
+}
+
 type AdListInput struct {
 	Title       string       `json:"title"`
 	AdvertiseID int          `json:"advertiseId,string"`
