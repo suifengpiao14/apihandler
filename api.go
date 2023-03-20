@@ -31,6 +31,13 @@ type OutputI interface {
 	String() (out string, err error)
 }
 
+type OutputString string
+
+func (output *OutputString) String() (out string, err error) {
+	out = string(*output)
+	return out, nil
+}
+
 func GetApiInterfaceID(apiInterface ApiInterface) (id string) {
 	rt := reflect.TypeOf(apiInterface)
 	kind := rt.Kind()
