@@ -17,7 +17,7 @@ func Run(ctx context.Context, input string) (out string, err error) {
 	if err != nil {
 		return "", err
 	}
-	out, err = handler.Run(ctx, input)
+	out, err = handler.Run(&ctx, input)
 	if err != nil {
 		return "", err
 	}

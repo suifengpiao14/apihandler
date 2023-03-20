@@ -21,7 +21,7 @@ import (
 var API_NOT_FOUND = errors.Errorf("not found")
 
 type ApiInterface interface {
-	GetDoFn() func(ctx context.Context) (out OutputI, err error)
+	GetDoFn() func(ctx *context.Context) (out OutputI, err error)
 	GetInputSchema() (lineschema string)
 	GetOutputSchema() (lineschema string)
 	GetRoute() (method string, path string)
@@ -132,7 +132,7 @@ func (a Api) convertInput(input string) (err error) {
 	return nil
 }
 
-func (a Api) Run(ctx context.Context, input string) (out string, err error) {
+func (a Api) Run(ctx *context.Context, input string) (out string, err error) {
 
 	if a.ApiInterface == nil {
 		err = errors.Errorf("handlerInterface required %v", a)
