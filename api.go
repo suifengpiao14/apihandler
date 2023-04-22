@@ -19,13 +19,38 @@ import (
 )
 
 var API_NOT_FOUND = errors.Errorf("not found")
+var (
+	ERROR_NOT_IMPLEMENTED = errors.New("not implemented")
+)
 
 type ApiInterface interface {
-	GetDoFn() func(ctx context.Context) (out OutputI, err error)
+	GetDoFn() (doFn func(ctx context.Context) (out OutputI, err error))
 	GetInputSchema() (lineschema string)
 	GetOutputSchema() (lineschema string)
 	GetRoute() (method string, path string)
 	Init()
+}
+
+type EmptyApi struct{}
+
+func (e *EmptyApi) GetDoFn() (doFn func(ctx context.Context) (out OutputI, err error)) {
+	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetDoFn")
+	panic(err)
+}
+func (e *EmptyApi) GetInputSchema() (lineschema string) {
+	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetInputSchema")
+	panic(err)
+}
+func (e *EmptyApi) GetOutputSchema() (lineschema string) {
+	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetOutputSchema")
+	panic(err)
+}
+func (e *EmptyApi) GetRoute() (method string, path string) {
+	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetRoute")
+	panic(err)
+}
+func (e *EmptyApi) Init() {
+
 }
 
 type OutputI interface {
