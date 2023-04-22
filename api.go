@@ -25,6 +25,7 @@ type ApiInterface interface {
 	GetInputSchema() (lineschema string)
 	GetOutputSchema() (lineschema string)
 	GetRoute() (method string, path string)
+	Init()
 }
 
 type OutputI interface {
@@ -123,6 +124,7 @@ func GetApi(method string, path string) (api Api, err error) {
 	}
 	exitsApi := apiAny.(*Api)
 	api = Api{ApiInterface: exitsApi.ApiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
+	api.Init()
 	return api, nil
 }
 
@@ -209,7 +211,7 @@ func NewJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JS
 	return jsonschemaLoader, nil
 }
 
-//FormatInput 统一获取 query,header,body 参数
+// FormatInput 统一获取 query,header,body 参数
 func FormatInput(r *http.Request, useArrInQueryAndHead bool) (reqInput []byte, err error) {
 	reqInput = make([]byte, 0)
 	s, err := io.ReadAll(r.Body)
