@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.1
-	github.com/suifengpiao14/gojsonschemavalidator v0.0.3
+	github.com/suifengpiao14/gojsonschemavalidator v0.0.4
 	github.com/suifengpiao14/jsonschemaline v0.0.20
 	github.com/suifengpiao14/templatemap v1.1.1
 	github.com/tidwall/gjson v1.14.4

@@ -44,8 +44,8 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/suifengpiao14/gojsonschemavalidator v0.0.3 h1:RIB2YCZjmr/b6aJ7WcUWk+evahNAGRTe80NQVIuLgP8=
-github.com/suifengpiao14/gojsonschemavalidator v0.0.3/go.mod h1:/81E93cLA0/6F0TUFodBb+VJtF0Qu4nLeTciJLvnFvA=
+github.com/suifengpiao14/gojsonschemavalidator v0.0.4 h1:NQ6Cxs5egyhOiDDEs8l+eQYBE1gj2Q6V40RKYbgLp8M=
+github.com/suifengpiao14/gojsonschemavalidator v0.0.4/go.mod h1:/81E93cLA0/6F0TUFodBb+VJtF0Qu4nLeTciJLvnFvA=
 github.com/suifengpiao14/jsonschemaline v0.0.20 h1:A8OKt0s/Zjx8CXPfREhk4oegdKlXShHcGhUzW+9gWFs=
 github.com/suifengpiao14/jsonschemaline v0.0.20/go.mod h1:Z3LiNu9SAHLPYvqbgTz1S6dykYxEBah0xIM0yWKdHqk=
 github.com/suifengpiao14/kvstruct v0.0.0-20230222094254-af4e4c2a21cd h1:43zEJRbRu3zPXG8GZVUr+kY/tEnKnN+i7nQD1q/QYE8=
