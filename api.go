@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"reflect"
 	"strings"
 	"sync"
 
@@ -38,19 +37,7 @@ func (output *OutputString) String() (out string, err error) {
 	return out, nil
 }
 
-func GetApiInterfaceID(apiInterface ApiInterface) (id string) {
-	rt := reflect.TypeOf(apiInterface)
-	kind := rt.Kind()
-	if kind != reflect.Ptr {
-		err := errors.Errorf("want:Ptr,got:%s", kind)
-		panic(err)
-	}
-	rtE := rt.Elem()
-	id = fmt.Sprintf("%s.%s", rtE.PkgPath(), rtE.Name())
-	return id
-}
-
-func GetRouteKey(method string, path string) (key string) {
+func getRouteKey(method string, path string) (key string) {
 	return fmt.Sprintf("%s_%s", strings.ToLower(method), path)
 }
 
@@ -63,7 +50,7 @@ func JsonMarshal(o interface{}) (out string, err error) {
 	return out, nil
 }
 
-type Api struct {
+type _Api struct {
 	ApiInterface
 	validateInputLoader  gojsonschema.JSONLoader
 	validateOutputLoader gojsonschema.JSONLoader
@@ -71,30 +58,57 @@ type Api struct {
 
 var apiMap sync.Map
 
+const (
+	apiMap_route_key = "___all_route___"
+)
+
 // RegisterApi 创建处理器，内部逻辑在接收请求前已经确定，后续不变，所以有错误直接panic ，能正常启动后，这部分不会出现错误
 func RegisterApi(apiInterface ApiInterface) (err error) {
 	method, path := apiInterface.GetRoute()
-	key := GetRouteKey(method, path)
+	key := getRouteKey(method, path)
 	// 以下初始化可以复用,线程安全
-	api := &Api{
+	api := &_Api{
 		ApiInterface: apiInterface,
 	}
 	inputSchema := apiInterface.GetInputSchema()
 	if inputSchema != "" {
-		api.validateInputLoader, err = NewJsonschemaLoader(inputSchema)
+		api.validateInputLoader, err = newJsonschemaLoader(inputSchema)
 		if err != nil {
 			return err
 		}
 	}
 	outputSchema := apiInterface.GetOutputSchema()
 	if outputSchema != "" {
-		api.validateOutputLoader, err = NewJsonschemaLoader(outputSchema)
+		api.validateOutputLoader, err = newJsonschemaLoader(outputSchema)
 		if err != nil {
 			return err
 		}
 	}
 	apiMap.Store(key, api)
+	routes := make(map[string][2]string, 0)
+	if routesI, ok := apiMap.Load(apiMap_route_key); ok {
+		if old, ok := routesI.(map[string][2]string); ok {
+			routes = old
+		}
+	}
+	route := [2]string{method, path}
+	routes[key] = route
+	apiMap.Store(apiMap_route_key, routes)
 	return nil
+}
+
+//GetAllRoute 获取已注册的所有api route
+func GetAllRoute() (routes [][2]string) {
+	routes = make([][2]string, 0)
+	if routesI, ok := apiMap.Load(apiMap_route_key); ok {
+		if tmp, ok := routesI.(map[string][2]string); ok {
+			for _, route := range tmp {
+				routes = append(routes, route)
+			}
+
+		}
+	}
+	return routes
 }
 
 func Run(ctx context.Context, r *http.Request) (out string, err error) {
@@ -115,18 +129,18 @@ func Run(ctx context.Context, r *http.Request) (out string, err error) {
 
 }
 
-func GetApi(method string, path string) (api Api, err error) {
-	key := GetRouteKey(method, path)
+func GetApi(method string, path string) (api _Api, err error) {
+	key := getRouteKey(method, path)
 	apiAny, ok := apiMap.Load(key)
 	if !ok {
 		return api, errors.WithMessagef(API_NOT_FOUND, "method:%s,path:%s", method, path)
 	}
-	exitsApi := apiAny.(*Api)
-	api = Api{ApiInterface: exitsApi.ApiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
+	exitsApi := apiAny.(*_Api)
+	api = _Api{ApiInterface: exitsApi.ApiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
 	return api, nil
 }
 
-func (a Api) inputValidate(input string) (err error) {
+func (a _Api) inputValidate(input string) (err error) {
 	if a.validateInputLoader == nil {
 		return nil
 	}
@@ -137,7 +151,7 @@ func (a Api) inputValidate(input string) (err error) {
 	}
 	return nil
 }
-func (a Api) outputValidate(output string) (err error) {
+func (a _Api) outputValidate(output string) (err error) {
 	outputStr := string(output)
 	if a.validateOutputLoader == nil {
 		return nil
@@ -149,7 +163,7 @@ func (a Api) outputValidate(output string) (err error) {
 	return nil
 }
 
-func (a Api) convertInput(input string) (err error) {
+func (a _Api) convertInput(input string) (err error) {
 	err = json.Unmarshal([]byte(input), a.ApiInterface)
 	if err != nil {
 		return err
@@ -157,7 +171,7 @@ func (a Api) convertInput(input string) (err error) {
 	return nil
 }
 
-func (a Api) Run(ctx context.Context, input string) (out string, err error) {
+func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 
 	if a.ApiInterface == nil {
 		err = errors.Errorf("handlerInterface required %v", a)
@@ -191,7 +205,7 @@ func (a Api) Run(ctx context.Context, input string) (out string, err error) {
 	return out, nil
 }
 
-func NewJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JSONLoader, err error) {
+func newJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JSONLoader, err error) {
 	if lineSchemaStr == "" {
 		err = errors.Errorf("NewJsonschemaLoader: arg lineSchemaStr required,got empty")
 		return nil, err
