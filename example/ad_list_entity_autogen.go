@@ -55,6 +55,10 @@ func (o AdListOutput) String() (out string, err error) {
 	return apihandler.JsonMarshal(o)
 }
 
+func (i *AdListInput) Init() {
+
+}
+
 func (i *AdListInput) GetDoFn() (doFn func(ctx context.Context) (out apihandler.OutputI, err error)) {
 	return func(ctx context.Context) (out apihandler.OutputI, err error) {
 		return AdListDoFn(ctx, i)

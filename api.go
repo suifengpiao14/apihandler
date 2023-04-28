@@ -18,12 +18,38 @@ import (
 )
 
 var API_NOT_FOUND = errors.Errorf("not found")
+var (
+	ERROR_NOT_IMPLEMENTED = errors.New("not implemented")
+)
 
 type ApiInterface interface {
-	GetDoFn() func(ctx context.Context) (out OutputI, err error)
+	GetDoFn() (doFn func(ctx context.Context) (out OutputI, err error))
 	GetInputSchema() (lineschema string)
 	GetOutputSchema() (lineschema string)
 	GetRoute() (method string, path string)
+	Init()
+}
+
+type EmptyApi struct{}
+
+func (e *EmptyApi) GetDoFn() (doFn func(ctx context.Context) (out OutputI, err error)) {
+	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetDoFn")
+	panic(err)
+}
+func (e *EmptyApi) GetInputSchema() (lineschema string) {
+	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetInputSchema")
+	panic(err)
+}
+func (e *EmptyApi) GetOutputSchema() (lineschema string) {
+	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetOutputSchema")
+	panic(err)
+}
+func (e *EmptyApi) GetRoute() (method string, path string) {
+	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetRoute")
+	panic(err)
+}
+func (e *EmptyApi) Init() {
+
 }
 
 type OutputI interface {
@@ -59,7 +85,8 @@ type _Api struct {
 var apiMap sync.Map
 
 const (
-	apiMap_route_key = "___all_route___"
+	apiMap_route_add_key = "___all_route_add___"
+	apiMap_route_del_key = "___all_route_del___"
 )
 
 // RegisterApi 创建处理器，内部逻辑在接收请求前已经确定，后续不变，所以有错误直接panic ，能正常启动后，这部分不会出现错误
@@ -86,26 +113,64 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 	}
 	apiMap.Store(key, api)
 	routes := make(map[string][2]string, 0)
-	if routesI, ok := apiMap.Load(apiMap_route_key); ok {
+	if routesI, ok := apiMap.Load(apiMap_route_add_key); ok {
 		if old, ok := routesI.(map[string][2]string); ok {
 			routes = old
 		}
 	}
 	route := [2]string{method, path}
 	routes[key] = route
-	apiMap.Store(apiMap_route_key, routes)
+	apiMap.Store(apiMap_route_add_key, routes)
+	return nil
+}
+
+func RegisterRouteFn(routeFn func(method string, path string) (err error)) (err error) {
+	routes := GetAllRoute()
+	for _, route := range routes {
+		method, path := route[0], route[1]
+		err = routeFn(method, path)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 //GetAllRoute 获取已注册的所有api route
 func GetAllRoute() (routes [][2]string) {
 	routes = make([][2]string, 0)
-	if routesI, ok := apiMap.Load(apiMap_route_key); ok {
+	delRouteMap := getAllDelRoute()
+	if routesI, ok := apiMap.Load(apiMap_route_add_key); ok {
 		if tmp, ok := routesI.(map[string][2]string); ok {
-			for _, route := range tmp {
+			for key, route := range tmp {
+				if _, ok := delRouteMap[key]; ok {
+					continue
+				}
 				routes = append(routes, route)
 			}
+		}
+	}
 
+	return routes
+}
+
+//RemoveRoute 记录删除的api 路由(部分路由可能已经注册，GetAllRoute 会排除)
+func RemoveRoute(method string, path string) {
+	key := getRouteKey(method, path)
+	delRoutes := make(map[string][2]string)
+	if delRoutesI, ok := apiMap.Load(apiMap_route_del_key); ok {
+		if old, ok := delRoutesI.(map[string][2]string); ok {
+			delRoutes = old
+		}
+	}
+	delRoutes[key] = [2]string{method, path}
+	apiMap.Store(apiMap_route_del_key, delRoutes)
+}
+
+func getAllDelRoute() (routes map[string][2]string) {
+	if routesI, ok := apiMap.Load(apiMap_route_del_key); ok {
+		if routes, ok = routesI.(map[string][2]string); ok {
+			return routes
 		}
 	}
 	return routes
@@ -223,7 +288,7 @@ func newJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JS
 	return jsonschemaLoader, nil
 }
 
-//FormatInput 统一获取 query,header,body 参数
+// FormatInput 统一获取 query,header,body 参数
 func FormatInput(r *http.Request, useArrInQueryAndHead bool) (reqInput []byte, err error) {
 	reqInput = make([]byte, 0)
 	s, err := io.ReadAll(r.Body)
