@@ -130,7 +130,6 @@ func RegisterRouteFn(routeFn func(method string, path string)) {
 		method, path := route[0], route[1]
 		routeFn(method, path)
 	}
-	return
 }
 
 //GetAllRoute 获取已注册的所有api route
