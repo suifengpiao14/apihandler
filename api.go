@@ -27,7 +27,7 @@ type ApiInterface interface {
 	GetInputSchema() (lineschema string)
 	GetOutputSchema() (lineschema string)
 	GetRoute() (method string, path string)
-	Init()
+	NewApiInterface() (apiInterface ApiInterface)
 }
 
 type EmptyApi struct{}
@@ -48,8 +48,9 @@ func (e *EmptyApi) GetRoute() (method string, path string) {
 	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetRoute")
 	panic(err)
 }
-func (e *EmptyApi) Init() {
-
+func (e *EmptyApi) NewApiInterface() (apiInterface ApiInterface) {
+	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "NewApiInterface")
+	panic(err)
 }
 
 type OutputI interface {
@@ -197,7 +198,7 @@ func GetApi(method string, path string) (api _Api, err error) {
 		return api, errors.WithMessagef(API_NOT_FOUND, "method:%s,path:%s", method, path)
 	}
 	exitsApi := apiAny.(*_Api)
-	api = _Api{ApiInterface: exitsApi.ApiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
+	api = _Api{ApiInterface: exitsApi.NewApiInterface(), validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
 	return api, nil
 }
 
