@@ -124,16 +124,13 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 	return nil
 }
 
-func RegisterRouteFn(routeFn func(method string, path string) (err error)) (err error) {
+func RegisterRouteFn(routeFn func(method string, path string)) {
 	routes := GetAllRoute()
 	for _, route := range routes {
 		method, path := route[0], route[1]
-		err = routeFn(method, path)
-		if err != nil {
-			return err
-		}
+		routeFn(method, path)
 	}
-	return nil
+	return
 }
 
 //GetAllRoute 获取已注册的所有api route
