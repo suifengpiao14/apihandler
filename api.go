@@ -200,6 +200,7 @@ func GetApi(method string, path string) (api _Api, err error) {
 	rt := reflect.TypeOf(exitsApi.ApiInterface).Elem()
 	rv := reflect.New(rt)
 	apiInterface := rv.Interface().(ApiInterface)
+	apiInterface.Init()
 	api = _Api{ApiInterface: apiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
 	return api, nil
 }
