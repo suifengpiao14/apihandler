@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -27,7 +28,7 @@ type ApiInterface interface {
 	GetInputSchema() (lineschema string)
 	GetOutputSchema() (lineschema string)
 	GetRoute() (method string, path string)
-	NewApiInterface() (apiInterface ApiInterface)
+	Init()
 }
 
 type EmptyApi struct{}
@@ -48,9 +49,7 @@ func (e *EmptyApi) GetRoute() (method string, path string) {
 	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetRoute")
 	panic(err)
 }
-func (e *EmptyApi) NewApiInterface() (apiInterface ApiInterface) {
-	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "NewApiInterface")
-	panic(err)
+func (e *EmptyApi) Init() {
 }
 
 type OutputI interface {
@@ -198,7 +197,10 @@ func GetApi(method string, path string) (api _Api, err error) {
 		return api, errors.WithMessagef(API_NOT_FOUND, "method:%s,path:%s", method, path)
 	}
 	exitsApi := apiAny.(*_Api)
-	api = _Api{ApiInterface: exitsApi.NewApiInterface(), validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
+	rt := reflect.TypeOf(exitsApi.ApiInterface).Elem()
+	rv := reflect.New(rt)
+	apiInterface := rv.Interface().(ApiInterface)
+	api = _Api{ApiInterface: apiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
 	return api, nil
 }
 
