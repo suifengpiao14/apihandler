@@ -207,7 +207,12 @@ func GetApi(method string, path string) (api _Api, err error) {
 	rv := reflect.New(rt)
 	apiInterface := rv.Interface().(ApiInterface)
 	apiInterface.Init()
-	api = _Api{ApiInterface: apiInterface, validateInputLoader: exitsApi.validateInputLoader, validateOutputLoader: exitsApi.validateOutputLoader}
+	api = _Api{
+		ApiInterface:         apiInterface,
+		validateInputLoader:  exitsApi.validateInputLoader,
+		validateOutputLoader: exitsApi.validateOutputLoader,
+		inputFormatGjsonPath: exitsApi.inputFormatGjsonPath,
+	}
 	return api, nil
 }
 
