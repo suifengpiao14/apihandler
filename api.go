@@ -78,6 +78,7 @@ func JsonMarshal(o interface{}) (out string, err error) {
 
 type _Api struct {
 	ApiInterface
+	inputFormatGjsonPath string
 	validateInputLoader  gojsonschema.JSONLoader
 	validateOutputLoader gojsonschema.JSONLoader
 }
@@ -103,6 +104,11 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 		if err != nil {
 			return err
 		}
+		inputLineSchema, err := jsonschemaline.ParseJsonschemaline(inputSchema)
+		if err != nil {
+			return err
+		}
+		api.inputFormatGjsonPath = inputLineSchema.GjsonPathWithDefaultFormat()
 	}
 	outputSchema := apiInterface.GetOutputSchema()
 	if outputSchema != "" {
@@ -178,7 +184,7 @@ func Run(ctx context.Context, r *http.Request) (out string, err error) {
 	if err != nil {
 		return "", err
 	}
-	input, err := FormatInput(r, false)
+	input, err := RequestInputToJson(r, false)
 	if err != nil {
 		return "", err
 	}
@@ -228,6 +234,15 @@ func (a _Api) outputValidate(output string) (err error) {
 	return nil
 }
 
+func (a _Api) modifyTypeByFormat(input string) (formattedInput string, err error) {
+	formattedInput = input
+	if a.inputFormatGjsonPath == "" {
+		return formattedInput, nil
+	}
+	formattedInput = gjson.Get(input, formattedInput).String()
+	return formattedInput, nil
+}
+
 func (a _Api) convertInput(input string) (err error) {
 	err = json.Unmarshal([]byte(input), a.ApiInterface)
 	if err != nil {
@@ -247,6 +262,11 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 		return "", err
 	}
 	err = a.inputValidate(input)
+	if err != nil {
+		return "", err
+	}
+	//将format 中 int,float,bool 应用到数据
+	input, err = a.modifyTypeByFormat(input)
 	if err != nil {
 		return "", err
 	}
@@ -288,8 +308,8 @@ func newJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JS
 	return jsonschemaLoader, nil
 }
 
-// FormatInput 统一获取 query,header,body 参数
-func FormatInput(r *http.Request, useArrInQueryAndHead bool) (reqInput []byte, err error) {
+// RequestInputToJson 统一获取 query,header,body 参数
+func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []byte, err error) {
 	reqInput = make([]byte, 0)
 	s, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
