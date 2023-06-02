@@ -56,8 +56,8 @@ github.com/suifengpiao14/gjsonmodifier v0.1.7 h1:IQKorZk5np6mXACZFsPIzzfHLnetxsi
 github.com/suifengpiao14/gjsonmodifier v0.1.7/go.mod h1:bwhORc92wKB1Ms1REvG5IGgBLLEjhOt/hu/XmtQWuKw=
 github.com/suifengpiao14/gojsonschemavalidator v0.0.4 h1:NQ6Cxs5egyhOiDDEs8l+eQYBE1gj2Q6V40RKYbgLp8M=
 github.com/suifengpiao14/gojsonschemavalidator v0.0.4/go.mod h1:/81E93cLA0/6F0TUFodBb+VJtF0Qu4nLeTciJLvnFvA=
-github.com/suifengpiao14/jsonschemaline v0.0.32 h1:idbkx2vygzVcsT1YpM+PQWOUrN2vtGY0S+S8F2X0yAc=
-github.com/suifengpiao14/jsonschemaline v0.0.32/go.mod h1:lSW1wC5XlbqFIFM6GcZeoJiOdX9EHKoLBDGmWEqqz8Q=
+github.com/suifengpiao14/jsonschemaline v0.0.33 h1:Yf63f/1bvixRBwjWZ7rSYnZAmmMOeaG48Z0lLWJ87Tc=
+github.com/suifengpiao14/jsonschemaline v0.0.33/go.mod h1:lSW1wC5XlbqFIFM6GcZeoJiOdX9EHKoLBDGmWEqqz8Q=
 github.com/suifengpiao14/kvstruct v0.0.0-20230302074148-b1e5a57ed5f6 h1:X3QA3a5dTRyky2hl23L7yG2rPIZgKmej0pUDbbncZhU=
 github.com/suifengpiao14/kvstruct v0.0.0-20230302074148-b1e5a57ed5f6/go.mod h1:v3hf2KPrafdYJJ49M5RWLfpYS8Z2fsJO/rAGMnIBYn8=
 github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=

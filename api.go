@@ -108,7 +108,7 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 		if err != nil {
 			return err
 		}
-		api.inputFormatGjsonPath = inputLineSchema.GjsonPathWithDefaultFormat()
+		api.inputFormatGjsonPath = inputLineSchema.GjsonPathWithDefaultFormat(true)
 	}
 	outputSchema := apiInterface.GetOutputSchema()
 	if outputSchema != "" {
@@ -244,7 +244,7 @@ func (a _Api) modifyTypeByFormat(input string) (formattedInput string, err error
 	if a.inputFormatGjsonPath == "" {
 		return formattedInput, nil
 	}
-	formattedInput = gjson.Get(input, formattedInput).String()
+	formattedInput = gjson.Get(input, a.inputFormatGjsonPath).String()
 	return formattedInput, nil
 }
 
@@ -271,11 +271,11 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 		return "", err
 	}
 	//将format 中 int,float,bool 应用到数据
-	input, err = a.modifyTypeByFormat(input)
+	formattedInput, err := a.modifyTypeByFormat(input)
 	if err != nil {
 		return "", err
 	}
-	err = a.convertInput(input)
+	err = a.convertInput(formattedInput)
 	if err != nil {
 		return "", err
 	}
