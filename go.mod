@@ -6,7 +6,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.1
 	github.com/suifengpiao14/gojsonschemavalidator v0.0.4
-	github.com/suifengpiao14/jsonschemaline v0.0.33
+	github.com/suifengpiao14/jsonschemaline v0.0.34
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	github.com/xeipuuv/gojsonschema v1.2.0
@@ -26,7 +26,7 @@ require (
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/suifengpiao14/gjsonmodifier v0.1.7 // indirect
-	github.com/suifengpiao14/kvstruct v0.0.0-20230302074148-b1e5a57ed5f6 // indirect
+	github.com/suifengpiao14/kvstruct v0.0.13 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect

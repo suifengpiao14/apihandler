@@ -78,9 +78,10 @@ func JsonMarshal(o interface{}) (out string, err error) {
 
 type _Api struct {
 	ApiInterface
-	inputFormatGjsonPath string
-	validateInputLoader  gojsonschema.JSONLoader
-	validateOutputLoader gojsonschema.JSONLoader
+	inputFormatGjsonPath  string
+	outputFormatGjsonPath string
+	validateInputLoader   gojsonschema.JSONLoader
+	validateOutputLoader  gojsonschema.JSONLoader
 }
 
 var apiMap sync.Map
@@ -116,6 +117,11 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 		if err != nil {
 			return err
 		}
+		outputLineSchema, err := jsonschemaline.ParseJsonschemaline(outputSchema)
+		if err != nil {
+			return err
+		}
+		api.outputFormatGjsonPath = outputLineSchema.GjsonPathWithDefaultFormat(true)
 	}
 	apiMap.Store(key, api)
 	routes := make(map[string][2]string, 0)
@@ -138,7 +144,7 @@ func RegisterRouteFn(routeFn func(method string, path string)) {
 	}
 }
 
-//GetAllRoute 获取已注册的所有api route
+// GetAllRoute 获取已注册的所有api route
 func GetAllRoute() (routes [][2]string) {
 	routes = make([][2]string, 0)
 	delRouteMap := getAllDelRoute()
@@ -156,7 +162,7 @@ func GetAllRoute() (routes [][2]string) {
 	return routes
 }
 
-//RemoveRoute 记录删除的api 路由(部分路由可能已经注册，GetAllRoute 会排除)
+// RemoveRoute 记录删除的api 路由(部分路由可能已经注册，GetAllRoute 会排除)
 func RemoveRoute(method string, path string) {
 	key := getRouteKey(method, path)
 	delRoutes := make(map[string][2]string)
@@ -208,10 +214,11 @@ func GetApi(method string, path string) (api _Api, err error) {
 	apiInterface := rv.Interface().(ApiInterface)
 	apiInterface.Init()
 	api = _Api{
-		ApiInterface:         apiInterface,
-		validateInputLoader:  exitsApi.validateInputLoader,
-		validateOutputLoader: exitsApi.validateOutputLoader,
-		inputFormatGjsonPath: exitsApi.inputFormatGjsonPath,
+		ApiInterface:          apiInterface,
+		validateInputLoader:   exitsApi.validateInputLoader,
+		validateOutputLoader:  exitsApi.validateOutputLoader,
+		inputFormatGjsonPath:  exitsApi.inputFormatGjsonPath,
+		outputFormatGjsonPath: exitsApi.outputFormatGjsonPath,
 	}
 	return api, nil
 }
@@ -239,12 +246,12 @@ func (a _Api) outputValidate(output string) (err error) {
 	return nil
 }
 
-func (a _Api) modifyTypeByFormat(input string) (formattedInput string, err error) {
+func (a _Api) modifyTypeByFormat(input string, formatGjsonPath string) (formattedInput string, err error) {
 	formattedInput = input
-	if a.inputFormatGjsonPath == "" {
+	if formatGjsonPath == "" {
 		return formattedInput, nil
 	}
-	formattedInput = gjson.Get(input, a.inputFormatGjsonPath).String()
+	formattedInput = gjson.Get(input, formatGjsonPath).String()
 	return formattedInput, nil
 }
 
@@ -271,7 +278,7 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 		return "", err
 	}
 	//将format 中 int,float,bool 应用到数据
-	formattedInput, err := a.modifyTypeByFormat(input)
+	formattedInput, err := a.modifyTypeByFormat(input, a.inputFormatGjsonPath)
 	if err != nil {
 		return "", err
 	}
@@ -284,7 +291,11 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 	if err != nil {
 		return "", err
 	}
-	out, err = outI.String()
+	originalOut, err := outI.String()
+	if err != nil {
+		return "", err
+	}
+	out, err = a.modifyTypeByFormat(originalOut, a.outputFormatGjsonPath)
 	if err != nil {
 		return "", err
 	}
