@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/suifengpiao14/funcs"
 	"github.com/suifengpiao14/gojsonschemavalidator"
 	"github.com/suifengpiao14/jsonschemaline"
 	"github.com/tidwall/gjson"
@@ -184,13 +185,8 @@ func getAllDelRoute() (routes map[string][2]string) {
 	return routes
 }
 
-func Run(ctx context.Context, r *http.Request) (out string, err error) {
-	method, path := r.Method, r.URL.Path
+func Run(ctx context.Context, method string, path string, input string) (out string, err error) {
 	api, err := GetApi(method, path)
-	if err != nil {
-		return "", err
-	}
-	input, err := RequestInputToJson(r, false)
 	if err != nil {
 		return "", err
 	}
@@ -289,6 +285,11 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 	doFn := a.ApiInterface.GetDoFn()
 	outI, err := doFn(ctx)
 	if err != nil {
+		return "", err
+	}
+	if funcs.IsNil(outI) {
+		err = errors.New("response not be nil ")
+		err = errors.WithMessage(err, "github.com/suifengpiao14/apihandler._Api.Run")
 		return "", err
 	}
 	originalOut, err := outI.String()
