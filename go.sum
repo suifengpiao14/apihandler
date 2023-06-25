@@ -7,8 +7,6 @@ github.com/evanphx/json-patch/v5 v5.6.0 h1:b91NhWfaz02IuVxO9faSllyAtNXHMPkC5J8sJ
 github.com/evanphx/json-patch/v5 v5.6.0/go.mod h1:G79N1coSVB93tBe7j6PhzjmR3/2VvlbKOFpnXhI9Bw4=
 github.com/frankban/quicktest v1.14.4 h1:g2rn0vABPOOXmZUj+vbmUp0lPoXEMuhTpIluN0XL9UY=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
-github.com/iancoleman/orderedmap v0.2.0 h1:sq1N/TFpYH++aViPcaKjys3bDClUEU7s5B+z6jq8pNA=
-github.com/iancoleman/orderedmap v0.2.0/go.mod h1:N0Wam8K1arqPXNWjMo21EXnBPOPp36vB07FNRdD2geA=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
@@ -35,12 +33,10 @@ github.com/suifengpiao14/gjsonmodifier v0.1.9 h1:U5d1fe90UpxJQmzzZlS7kG/P4sAF3fZ
 github.com/suifengpiao14/gjsonmodifier v0.1.9/go.mod h1:bwhORc92wKB1Ms1REvG5IGgBLLEjhOt/hu/XmtQWuKw=
 github.com/suifengpiao14/gojsonschemavalidator v0.0.4 h1:NQ6Cxs5egyhOiDDEs8l+eQYBE1gj2Q6V40RKYbgLp8M=
 github.com/suifengpiao14/gojsonschemavalidator v0.0.4/go.mod h1:/81E93cLA0/6F0TUFodBb+VJtF0Qu4nLeTciJLvnFvA=
-github.com/suifengpiao14/helpers v0.0.2 h1:UZWPjNoU+s2SHGyGNTWn0KP4N8evHbzoTE2f9orEb7w=
-github.com/suifengpiao14/helpers v0.0.2/go.mod h1:Imh7HtKgXA3CXOLv2XQ5zEQMckDadqzu07mypfge1qo=
-github.com/suifengpiao14/jsonschemaline v0.0.37 h1:gbFqzArnLBEobSRXnqOZJ2l4HLvQn9ByWPjXcPVRb3s=
-github.com/suifengpiao14/jsonschemaline v0.0.37/go.mod h1:05VH+HgVpQeOoDWEKlNTEZtLKUjiss3bdcW3yNM/eoM=
-github.com/suifengpiao14/kvstruct v0.0.13 h1:zuTX1eK8q2ucDE8/YN4KvdwCXGhCNCya1i5tJc3sWJQ=
-github.com/suifengpiao14/kvstruct v0.0.13/go.mod h1:v3hf2KPrafdYJJ49M5RWLfpYS8Z2fsJO/rAGMnIBYn8=
+github.com/suifengpiao14/jsonschemaline v0.0.43 h1:AZ6s2e+Yu6JftMxFzvFeRWD6YMWE1Q0Ys9A0Hgw4isE=
+github.com/suifengpiao14/jsonschemaline v0.0.43/go.mod h1:J/pR9XNvPZhDuNxTh6RdKWydyskN+DTeLH/d3gCQLkU=
+github.com/suifengpiao14/kvstruct v0.0.14 h1:c5Eb6AsBN0gTVGk/Vj05aEiJ79j+pNNo3aIBw09EuMo=
+github.com/suifengpiao14/kvstruct v0.0.14/go.mod h1:v3hf2KPrafdYJJ49M5RWLfpYS8Z2fsJO/rAGMnIBYn8=
 github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/gjson v1.14.4 h1:uo0p8EbA09J7RQaflQ1aBRffTR7xedD2bcIVSYxLnkM=
 github.com/tidwall/gjson v1.14.4/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
