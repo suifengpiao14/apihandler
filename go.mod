@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/suifengpiao14/funcs v0.0.4
 	github.com/suifengpiao14/gojsonschemavalidator v0.0.4
-	github.com/suifengpiao14/jsonschemaline v0.0.45
+	github.com/suifengpiao14/jsonschemaline v0.0.46
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	github.com/xeipuuv/gojsonschema v1.2.0
