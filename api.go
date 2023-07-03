@@ -80,6 +80,7 @@ func JsonMarshal(o interface{}) (out string, err error) {
 type _Api struct {
 	ApiInterface
 	inputFormatGjsonPath  string
+	defaultJson           string
 	outputFormatGjsonPath string
 	validateInputLoader   gojsonschema.JSONLoader
 	validateOutputLoader  gojsonschema.JSONLoader
@@ -111,6 +112,12 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 			return err
 		}
 		api.inputFormatGjsonPath = inputLineSchema.GjsonPathWithDefaultFormat(true)
+		defaultInputJson, err := inputLineSchema.DefaultJson()
+		if err != nil {
+			err = errors.WithMessage(err, "get input default json error")
+			return err
+		}
+		api.defaultJson = defaultInputJson.Json
 	}
 	outputSchema := apiInterface.GetOutputSchema()
 	if outputSchema != "" {
@@ -215,6 +222,7 @@ func GetApi(method string, path string) (api _Api, err error) {
 		validateOutputLoader:  exitsApi.validateOutputLoader,
 		inputFormatGjsonPath:  exitsApi.inputFormatGjsonPath,
 		outputFormatGjsonPath: exitsApi.outputFormatGjsonPath,
+		defaultJson:           exitsApi.defaultJson,
 	}
 	return api, nil
 }
@@ -268,6 +276,15 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 	if a.ApiInterface.GetDoFn() == nil { //此处只先判断,不取值,等后续将input值填充后再获取
 		err = errors.Errorf("doFn required %v", a.ApiInterface)
 		return "", err
+	}
+
+	// 合并默认值
+	if a.defaultJson != "" {
+		input, err = jsonschemaline.JsonMerge(a.defaultJson, input)
+		if err != nil {
+			err = errors.WithMessage(err, "merge default value error")
+			return "", err
+		}
 	}
 	err = a.inputValidate(input)
 	if err != nil {
