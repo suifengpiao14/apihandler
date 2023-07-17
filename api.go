@@ -14,6 +14,7 @@ import (
 	"github.com/suifengpiao14/funcs"
 	"github.com/suifengpiao14/gojsonschemavalidator"
 	"github.com/suifengpiao14/jsonschemaline"
+	"github.com/suifengpiao14/logchan/v2"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"github.com/xeipuuv/gojsonschema"
@@ -31,6 +32,35 @@ type ApiInterface interface {
 	GetRoute() (method string, path string)
 	Init()
 }
+
+type LogInfoApiRun struct {
+	Context        context.Context
+	Input          string
+	DefaultJson    string
+	MergedDefault  string
+	Err            error `json:"error"`
+	FormattedInput string
+	OriginalOut    string
+	Out            string
+	logchan.EmptyLogInfo
+}
+
+func (l *LogInfoApiRun) GetName() logchan.LogName {
+	return LOG_INFO_EXEC_API_HANDLER
+}
+func (l *LogInfoApiRun) Error() error {
+	return l.Err
+}
+
+type LogName string
+
+func (logName LogName) String() (name string) {
+	return string(logName)
+}
+
+const (
+	LOG_INFO_EXEC_API_HANDLER LogName = "LogInfoExecApiHandler"
+)
 
 type EmptyApi struct{}
 
@@ -268,6 +298,14 @@ func (a _Api) convertInput(input string) (err error) {
 }
 
 func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
+	logInfo := LogInfoApiRun{
+		Context:     ctx,
+		Input:       input,
+		DefaultJson: a.defaultJson,
+	}
+	defer func() {
+		logchan.SendLogInfo(&logInfo)
+	}()
 
 	if a.ApiInterface == nil {
 		err = errors.Errorf("handlerInterface required %v", a)
@@ -285,6 +323,7 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 			err = errors.WithMessage(err, "merge default value error")
 			return "", err
 		}
+		logInfo.MergedDefault = input
 	}
 	err = a.inputValidate(input)
 	if err != nil {
@@ -295,6 +334,7 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 	if err != nil {
 		return "", err
 	}
+	logInfo.FormattedInput = formattedInput
 	err = a.convertInput(formattedInput)
 	if err != nil {
 		return "", err
@@ -313,10 +353,12 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 	if err != nil {
 		return "", err
 	}
+	logInfo.OriginalOut = originalOut
 	out, err = a.modifyTypeByFormat(originalOut, a.outputFormatGjsonPath)
 	if err != nil {
 		return "", err
 	}
+	logInfo.Out = out
 	err = a.outputValidate(out)
 	if err != nil {
 		return "", err
