@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/suifengpiao14/funcs v0.0.4
 	github.com/suifengpiao14/gojsonschemavalidator v0.0.4
-	github.com/suifengpiao14/jsonschemaline v0.0.47
+	github.com/suifengpiao14/jsonschemaline v0.0.48
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	github.com/xeipuuv/gojsonschema v1.2.0
@@ -16,7 +16,6 @@ require (
 require (
 	github.com/d5/tengo/v2 v2.16.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/suifengpiao14/gjsonmodifier v0.1.9 // indirect

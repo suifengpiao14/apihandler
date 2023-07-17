@@ -280,7 +280,7 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 
 	// 合并默认值
 	if a.defaultJson != "" {
-		input, err = jsonschemaline.JsonMergeIgnoreEmptyString(a.defaultJson, input)
+		input, err = jsonschemaline.MergeDefault(a.defaultJson, input)
 		if err != nil {
 			err = errors.WithMessage(err, "merge default value error")
 			return "", err
