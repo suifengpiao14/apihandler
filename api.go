@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strings"
 	"sync"
@@ -434,6 +435,19 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 		if err != nil {
 			return nil, err
 		}
+	}
+	scheme := "http"
+	if strings.Contains(strings.ToLower(r.Proto), "https") {
+		scheme = "https"
+	}
+	u := url.URL{
+		Scheme: scheme,
+		Path:   r.URL.Path,
+		Host:   r.Host,
+	}
+	reqInput, err = sjson.SetBytes(reqInput, "http_url", u.String())
+	if err != nil {
+		return nil, err
 	}
 	return reqInput, nil
 }
