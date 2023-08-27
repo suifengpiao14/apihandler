@@ -15,6 +15,7 @@ import (
 	"github.com/suifengpiao14/funcs"
 	"github.com/suifengpiao14/gojsonschemavalidator"
 	"github.com/suifengpiao14/jsonschemaline"
+	"github.com/suifengpiao14/logchan/v2"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"github.com/xeipuuv/gojsonschema"
@@ -42,6 +43,35 @@ type APIProfile struct {
 	Path        string `json:"Path" validate:"required"`        //路径
 	Description string `json:"description" validate:"required"` //描述
 }
+
+type LogInfoApiRun struct {
+	Context        context.Context
+	Input          string
+	DefaultJson    string
+	MergedDefault  string
+	Err            error `json:"error"`
+	FormattedInput string
+	OriginalOut    string
+	Out            string
+	logchan.EmptyLogInfo
+}
+
+func (l *LogInfoApiRun) GetName() logchan.LogName {
+	return LOG_INFO_EXEC_API_HANDLER
+}
+func (l *LogInfoApiRun) Error() error {
+	return l.Err
+}
+
+type LogName string
+
+func (logName LogName) String() (name string) {
+	return string(logName)
+}
+
+const (
+	LOG_INFO_EXEC_API_HANDLER LogName = "LogInfoExecApiHandler"
+)
 
 type EmptyApi struct{}
 
@@ -91,6 +121,7 @@ func JsonMarshal(o interface{}) (out string, err error) {
 type _Api struct {
 	ApiInterface
 	inputFormatGjsonPath  string
+	defaultJson           string
 	outputFormatGjsonPath string
 	validateInputLoader   gojsonschema.JSONLoader
 	validateOutputLoader  gojsonschema.JSONLoader
@@ -122,6 +153,12 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 			return err
 		}
 		api.inputFormatGjsonPath = inputLineSchema.GjsonPathWithDefaultFormat(true)
+		defaultInputJson, err := inputLineSchema.DefaultJson()
+		if err != nil {
+			err = errors.WithMessage(err, "get input default json error")
+			return err
+		}
+		api.defaultJson = defaultInputJson.Json
 	}
 	outputSchema := apiInterface.GetOutputSchema()
 	if outputSchema != "" {
@@ -258,6 +295,7 @@ func GetApi(method string, path string) (api _Api, err error) {
 		validateOutputLoader:  exitsApi.validateOutputLoader,
 		inputFormatGjsonPath:  exitsApi.inputFormatGjsonPath,
 		outputFormatGjsonPath: exitsApi.outputFormatGjsonPath,
+		defaultJson:           exitsApi.defaultJson,
 	}
 	return api, nil
 }
@@ -303,6 +341,14 @@ func (a _Api) convertInput(input string) (err error) {
 }
 
 func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
+	logInfo := LogInfoApiRun{
+		Context:     ctx,
+		Input:       input,
+		DefaultJson: a.defaultJson,
+	}
+	defer func() {
+		logchan.SendLogInfo(&logInfo)
+	}()
 
 	if a.ApiInterface == nil {
 		err = errors.Errorf("handlerInterface required %v", a)
@@ -311,6 +357,16 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 	if a.ApiInterface.GetDoFn() == nil { //此处只先判断,不取值,等后续将input值填充后再获取
 		err = errors.Errorf("doFn required %v", a.ApiInterface)
 		return "", err
+	}
+
+	// 合并默认值
+	if a.defaultJson != "" {
+		input, err = jsonschemaline.MergeDefault(input, a.defaultJson)
+		if err != nil {
+			err = errors.WithMessage(err, "merge default value error")
+			return "", err
+		}
+		logInfo.MergedDefault = input
 	}
 	err = a.inputValidate(input)
 	if err != nil {
@@ -321,6 +377,7 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 	if err != nil {
 		return "", err
 	}
+	logInfo.FormattedInput = formattedInput
 	err = a.convertInput(formattedInput)
 	if err != nil {
 		return "", err
@@ -339,10 +396,12 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 	if err != nil {
 		return "", err
 	}
+	logInfo.OriginalOut = originalOut
 	out, err = a.modifyTypeByFormat(originalOut, a.outputFormatGjsonPath)
 	if err != nil {
 		return "", err
 	}
+	logInfo.Out = out
 	err = a.outputValidate(out)
 	if err != nil {
 		return "", err
