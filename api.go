@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"github.com/suifengpiao14/funcs"
 	"github.com/suifengpiao14/gojsonschemavalidator"
@@ -30,6 +31,16 @@ type ApiInterface interface {
 	GetOutputSchema() (lineschema string)
 	GetRoute() (method string, path string)
 	Init()
+	GetAPIProfile() (profile APIProfile)
+}
+
+type APIProfile struct {
+	Domain      string `json:"domain" validate:"required"`      // 领域
+	Name        string `json:"name" validate:"required"`        // 名称 唯一键
+	Title       string `json:"title" validate:"required"`       // 标题
+	Method      string `json:"method" validate:"required"`      // 请求方法
+	Path        string `json:"Path" validate:"required"`        //路径
+	Description string `json:"description" validate:"required"` //描述
 }
 
 type EmptyApi struct{}
@@ -137,12 +148,44 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 	return nil
 }
 
+func GetAllAPIProfile() (apiProfiles []APIProfile, err error) {
+	apiProfiles = make([]APIProfile, 0)
+	apis, err := getAllAPI()
+	if err != nil {
+		return nil, err
+	}
+	for _, api := range apis {
+		apiProfile := api.GetAPIProfile()
+		validate := validator.New()
+		err = validate.Struct(apiProfile)
+		if err != nil {
+			return nil, err
+		}
+		apiProfiles = append(apiProfiles, apiProfile)
+	}
+	return apiProfiles, nil
+}
+
 func RegisterRouteFn(routeFn func(method string, path string)) {
 	routes := GetAllRoute()
 	for _, route := range routes {
 		method, path := route[0], route[1]
 		routeFn(method, path)
 	}
+}
+
+func getAllAPI() (apis []ApiInterface, err error) {
+	routes := GetAllRoute()
+	apis = make([]ApiInterface, 0)
+	for _, route := range routes {
+		method, path := route[0], route[1]
+		api, err := GetApi(method, path)
+		if err != nil {
+			return nil, err
+		}
+		apis = append(apis, api)
+	}
+	return apis, nil
 }
 
 // GetAllRoute 获取已注册的所有api route
