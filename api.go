@@ -197,6 +197,8 @@ func GetAllAPIProfile() (apiProfiles []APIProfile, err error) {
 		validate := validator.New()
 		err = validate.Struct(apiProfile)
 		if err != nil {
+			method, path := api.GetRoute()
+			err = errors.WithMessagef(err, "method:%s,path:%s", method, path)
 			return nil, err
 		}
 		apiProfiles = append(apiProfiles, apiProfile)
