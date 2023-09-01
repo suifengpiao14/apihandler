@@ -40,8 +40,6 @@ type APIProfile struct {
 	Domain      string `json:"domain" validate:"required"`      // 领域
 	Name        string `json:"name" validate:"required"`        // 名称 唯一键
 	Title       string `json:"title" validate:"required"`       // 标题
-	Method      string `json:"method" validate:"required"`      // 请求方法
-	Path        string `json:"Path" validate:"required"`        //路径
 	Description string `json:"description" validate:"required"` //描述
 }
 

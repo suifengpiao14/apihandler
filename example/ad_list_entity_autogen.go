@@ -58,13 +58,10 @@ func (o AdListOutput) String() (out string, err error) {
 func (i *AdListInput) Init() {
 }
 func (i *AdListInput) GetAPIProfile() (apiProfile apihandler.APIProfile) {
-	method, path := i.GetRoute()
 	return apihandler.APIProfile{
 		Domain:      "example", // 领域
 		Name:        "adList",  // 名称 唯一键
 		Title:       "广告列表",    // 标题
-		Method:      method,    // 请求方法
-		Path:        path,      //路径
 		Description: "广告列表",    //描述
 	}
 }
