@@ -57,15 +57,16 @@ func (o AdListOutput) String() (out string, err error) {
 
 func (i *AdListInput) Init() {
 }
-func (i *AdListInput) GetAPIProfile() (apiProfile apihandler.APIProfile) {
-	return apihandler.APIProfile{
-		Domain:      "example", // 领域
-		Name:        "adList",  // 名称 唯一键
-		Title:       "广告列表",    // 标题
-		Description: "广告列表",    //描述
-	}
-}
 
+func (e *AdListInput) GetName() (domain string, name string) {
+	return "example", "adList"
+}
+func (e *AdListInput) GetDescription() (title string, description string) {
+	return "广告列表", "广告列表"
+}
+func (e *AdListInput) GetConfig() (cfg apihandler.ApiConfig) {
+	return
+}
 func (i *AdListInput) GetDoFn() (doFn func(ctx context.Context) (out apihandler.OutputI, err error)) {
 	return func(ctx context.Context) (out apihandler.OutputI, err error) {
 		return AdListDoFn(ctx, i)

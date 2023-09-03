@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
@@ -33,14 +34,14 @@ type ApiInterface interface {
 	GetOutputSchema() (lineschema string)
 	GetRoute() (method string, path string)
 	Init()
-	GetAPIProfile() (profile APIProfile)
+	GetDescription() (title string, description string)
+	GetName() (domain string, name string)
+	GetConfig() (cfg ApiConfig)
 }
 
-type APIProfile struct {
-	Domain      string `json:"domain" validate:"required"`      // 领域
-	Name        string `json:"name" validate:"required"`        // 名称 唯一键
-	Title       string `json:"title" validate:"required"`       // 标题
-	Description string `json:"description" validate:"required"` //描述
+type ApiConfig struct {
+	Auth     bool          `json:"ignoreAuth"` // 需要鉴权
+	Throttle time.Duration `json:"throttle"`   // 节流,一定时间内只执行一次,防止多次连续点击
 }
 
 type LogInfoApiRun struct {
@@ -72,25 +73,23 @@ const (
 	LOG_INFO_EXEC_API_HANDLER LogName = "LogInfoExecApiHandler"
 )
 
-type EmptyApi struct{}
+// DefaultImplementFuncs 可选部分接口函数
+type DefaultImplementFuncs struct{}
 
-func (e *EmptyApi) GetDoFn() (doFn func(ctx context.Context) (out OutputI, err error)) {
-	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetDoFn")
-	panic(err)
+func (e *DefaultImplementFuncs) GetInputSchema() (lineschema string) {
+	return ""
 }
-func (e *EmptyApi) GetInputSchema() (lineschema string) {
-	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetInputSchema")
-	panic(err)
+func (e *DefaultImplementFuncs) GetOutputSchema() (lineschema string) {
+	return ""
 }
-func (e *EmptyApi) GetOutputSchema() (lineschema string) {
-	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetOutputSchema")
-	panic(err)
+
+func (e *DefaultImplementFuncs) Init() {
 }
-func (e *EmptyApi) GetRoute() (method string, path string) {
-	err := errors.WithMessage(ERROR_NOT_IMPLEMENTED, "GetRoute")
-	panic(err)
-}
-func (e *EmptyApi) Init() {
+
+func (e *DefaultImplementFuncs) GetConfig() (cfg ApiConfig) {
+	return ApiConfig{
+		Auth: true,
+	}
 }
 
 type OutputI interface {
@@ -130,7 +129,6 @@ var apiMap sync.Map
 
 const (
 	apiMap_route_add_key = "___all_route_add___"
-	apiMap_route_del_key = "___all_route_del___"
 )
 
 // RegisterApi 创建处理器，内部逻辑在接收请求前已经确定，后续不变，所以有错误直接panic ，能正常启动后，这部分不会出现错误
@@ -184,6 +182,30 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 	return nil
 }
 
+type APIProfile struct {
+	Domain      string `json:"domain"`      // 领域
+	Name        string `json:"name"`        // 名称 唯一键
+	Title       string `json:"title"`       // 标题
+	Method      string `json:"method"`      // 请求方法
+	Path        string `json:"path"`        // 请求路径
+	Description string `json:"description"` //描述
+}
+
+func GetAPIProfile(api ApiInterface) (apiProfile APIProfile) {
+	domain, name := api.GetName()
+	title, description := api.GetDescription()
+	method, path := api.GetRoute()
+	apiProfile = APIProfile{
+		Domain:      domain,      // 领域
+		Name:        name,        // 名称 唯一键
+		Title:       title,       // 标题
+		Method:      method,      // 请求方法
+		Path:        path,        // 请求路径
+		Description: description, //描述
+	}
+	return apiProfile
+}
+
 func GetAllAPIProfile() (apiProfiles []APIProfile, err error) {
 	apiProfiles = make([]APIProfile, 0)
 	apis, err := getAllAPI()
@@ -191,7 +213,7 @@ func GetAllAPIProfile() (apiProfiles []APIProfile, err error) {
 		return nil, err
 	}
 	for _, api := range apis {
-		apiProfile := api.GetAPIProfile()
+		apiProfile := GetAPIProfile(api)
 		validate := validator.New()
 		err = validate.Struct(apiProfile)
 		if err != nil {
@@ -229,40 +251,14 @@ func getAllAPI() (apis []ApiInterface, err error) {
 // GetAllRoute 获取已注册的所有api route
 func GetAllRoute() (routes [][2]string) {
 	routes = make([][2]string, 0)
-	delRouteMap := getAllDelRoute()
 	if routesI, ok := apiMap.Load(apiMap_route_add_key); ok {
 		if tmp, ok := routesI.(map[string][2]string); ok {
-			for key, route := range tmp {
-				if _, ok := delRouteMap[key]; ok {
-					continue
-				}
+			for _, route := range tmp {
 				routes = append(routes, route)
 			}
 		}
 	}
 
-	return routes
-}
-
-// RemoveRoute 记录删除的api 路由(部分路由可能已经注册，GetAllRoute 会排除)
-func RemoveRoute(method string, path string) {
-	key := getRouteKey(method, path)
-	delRoutes := make(map[string][2]string)
-	if delRoutesI, ok := apiMap.Load(apiMap_route_del_key); ok {
-		if old, ok := delRoutesI.(map[string][2]string); ok {
-			delRoutes = old
-		}
-	}
-	delRoutes[key] = [2]string{method, path}
-	apiMap.Store(apiMap_route_del_key, delRoutes)
-}
-
-func getAllDelRoute() (routes map[string][2]string) {
-	if routesI, ok := apiMap.Load(apiMap_route_del_key); ok {
-		if routes, ok = routesI.(map[string][2]string); ok {
-			return routes
-		}
-	}
 	return routes
 }
 
