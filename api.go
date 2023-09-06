@@ -34,7 +34,7 @@ var (
 	ERROR_NOT_IMPLEMENTED = errors.New("not implemented")
 )
 
-type HttpHandlerFunc func(ctx context.Context, api _Api, w http.ResponseWriter, r *http.Request)
+type HttpHandlerFunc func(ctx context.Context, api ApiInterface, w http.ResponseWriter, r *http.Request)
 
 type ApiInterface interface {
 	GetHttpHandlerFunc() (httpHandlerFunc HttpHandlerFunc)
@@ -513,7 +513,7 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 	return reqInput, nil
 }
 
-func DefaultHttpHandlerFunc(ctx context.Context, api _Api, w http.ResponseWriter, r *http.Request) {
+func DefaultHttpHandlerFunc(ctx context.Context, api ApiInterface, w http.ResponseWriter, r *http.Request) {
 	reqInput, err := RequestInputToJson(r, false)
 	if err != nil {
 		handlerError(w, r, err)
@@ -538,7 +538,13 @@ func DefaultHttpHandlerFunc(ctx context.Context, api _Api, w http.ResponseWriter
 			return
 		}
 	}
-	out, err := api.Run(context.Background(), string(reqInput))
+	method, path := api.GetRoute()
+	capi, err := GetApi(method, path)
+	if err != nil {
+		handlerError(w, r, err)
+		return
+	}
+	out, err := capi.Run(context.Background(), string(reqInput))
 	if err != nil {
 		handlerError(w, r, err)
 		return
