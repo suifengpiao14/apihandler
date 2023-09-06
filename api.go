@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
+	"github.com/suifengpiao14/apihandler/auth"
 	"github.com/suifengpiao14/funcs"
 	"github.com/suifengpiao14/gojsonschemavalidator"
 	"github.com/suifengpiao14/jsonschemaline"
@@ -23,12 +24,20 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
+func init() {
+	// 注册默认鉴权服务
+	auth.RegisterAuthFunc(auth.CasDoorAuthFunc)
+}
+
 var API_NOT_FOUND = errors.Errorf("not found")
 var (
 	ERROR_NOT_IMPLEMENTED = errors.New("not implemented")
 )
 
+type HttpHandlerFunc func(ctx context.Context, api _Api, w http.ResponseWriter, r *http.Request)
+
 type ApiInterface interface {
+	GetHttpHandlerFunc() (httpHandlerFunc HttpHandlerFunc)
 	GetDoFn() (doFn func(ctx context.Context) (out OutputI, err error))
 	GetInputSchema() (lineschema string)
 	GetOutputSchema() (lineschema string)
@@ -84,6 +93,10 @@ func (e *DefaultImplementFuncs) GetOutputSchema() (lineschema string) {
 }
 
 func (e *DefaultImplementFuncs) Init() {
+}
+
+func (e *DefaultImplementFuncs) GetHttpHandlerFunc() (httpHandlerFunc HttpHandlerFunc) {
+	return DefaultHttpHandlerFunc
 }
 
 func (e *DefaultImplementFuncs) GetConfig() (cfg ApiConfig) {
@@ -337,6 +350,15 @@ func (a _Api) convertInput(input string) (err error) {
 	return nil
 }
 
+func (a _Api) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	httpHandlerFunc := a.ApiInterface.GetHttpHandlerFunc()
+	if httpHandlerFunc == nil {
+		err := errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
+		panic(err)
+	}
+	httpHandlerFunc(ctx, a, w, r)
+}
+
 func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 	logInfo := LogInfoApiRun{
 		Context:     ctx,
@@ -489,4 +511,75 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 		return nil, err
 	}
 	return reqInput, nil
+}
+
+func DefaultHttpHandlerFunc(ctx context.Context, api _Api, w http.ResponseWriter, r *http.Request) {
+	reqInput, err := RequestInputToJson(r, false)
+	if err != nil {
+		handlerError(w, r, err)
+		return
+	}
+	if api.GetConfig().Auth { // 需要鉴权,先鉴权
+		token := gjson.GetBytes(reqInput, auth.GetAuthKey()).String()
+		authFunc, ok := auth.GetAuthFunc()
+		if !ok {
+			err = errors.New("not found authFunc,please call auth.RegisterAuthFunc before")
+			handlerError(w, r, err)
+			return
+		}
+		user, err := authFunc(token)
+		if err != nil {
+			handlerError(w, r, err)
+			return
+		}
+		reqInput, err = sjson.SetBytes(reqInput, "userId", user.GetId())
+		if err != nil {
+			handlerError(w, r, err)
+			return
+		}
+	}
+	out, err := api.Run(context.Background(), string(reqInput))
+	if err != nil {
+		handlerError(w, r, err)
+		return
+	}
+	jsonContentType := "application/json"
+	if strings.Contains(r.Header.Get("Accept"), jsonContentType) {
+		w.Header().Add("content-type", jsonContentType)
+	}
+	out, err = jsonschemaline.MergeDefault(out, `{"code":"0","message":"ok"}`)
+	if err != nil {
+		handlerError(w, r, err)
+		return
+	}
+	_, err = io.WriteString(w, out)
+	if err != nil {
+		handlerError(w, r, err)
+		return
+	}
+}
+
+type ResponseCodeMessage struct {
+	Code    int    `json:"code,string"`
+	Message string `json:"message"`
+}
+
+func handlerError(w http.ResponseWriter, r *http.Request, err error) {
+	httpCode := 0
+	if errors.Is(err, gojsonschemavalidator.ERROR_INVALID) {
+		httpCode = http.StatusBadRequest
+	}
+	errorOut := ResponseCodeMessage{
+		Code:    httpCode,
+		Message: err.Error(),
+	}
+	b, err1 := json.Marshal(errorOut)
+	if err1 != nil {
+		panic(err1)
+	}
+	_, err1 = w.Write(b)
+	if err1 != nil {
+		panic(err1)
+	}
+
 }

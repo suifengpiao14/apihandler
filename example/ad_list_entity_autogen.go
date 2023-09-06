@@ -22,6 +22,7 @@ type AdListInput struct {
 	Index       int          `json:"index,string"`
 	Size        int          `json:"size,string"`
 	Output      AdListOutput `json:"-"`
+	apihandler.DefaultImplementFuncs
 }
 
 type AdListOutput struct {
