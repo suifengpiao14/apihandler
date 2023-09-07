@@ -350,13 +350,14 @@ func (a _Api) convertInput(input string) (err error) {
 	return nil
 }
 
-func (a _Api) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (a _Api) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
 	httpHandlerFunc := a.ApiInterface.GetHttpHandlerFunc()
 	if httpHandlerFunc == nil {
-		err := errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
-		panic(err)
+		err = errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
+		return err
 	}
-	httpHandlerFunc(ctx, a, w, r)
+	err = httpHandlerFunc(ctx, a, w, r)
+	return err
 }
 
 func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
