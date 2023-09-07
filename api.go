@@ -34,7 +34,7 @@ var (
 	ERROR_NOT_IMPLEMENTED = errors.New("not implemented")
 )
 
-type HttpHandlerFunc func(ctx context.Context, api ApiInterface, w http.ResponseWriter, r *http.Request)
+type HttpHandlerFunc func(ctx context.Context, api ApiInterface, w http.ResponseWriter, r *http.Request) (err error) // 此处只返回error,确保输出写入到w
 
 type ApiInterface interface {
 	GetHttpHandlerFunc() (httpHandlerFunc HttpHandlerFunc)
@@ -513,41 +513,35 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 	return reqInput, nil
 }
 
-func DefaultHttpHandlerFunc(ctx context.Context, api ApiInterface, w http.ResponseWriter, r *http.Request) {
+func DefaultHttpHandlerFunc(ctx context.Context, api ApiInterface, w http.ResponseWriter, r *http.Request) (err error) {
 	reqInput, err := RequestInputToJson(r, false)
 	if err != nil {
-		handlerError(w, r, err)
-		return
+		return err
 	}
 	if api.GetConfig().Auth { // 需要鉴权,先鉴权
 		token := gjson.GetBytes(reqInput, auth.GetAuthKey()).String()
 		authFunc, ok := auth.GetAuthFunc()
 		if !ok {
 			err = errors.New("not found authFunc,please call auth.RegisterAuthFunc before")
-			handlerError(w, r, err)
-			return
+			return err
 		}
 		user, err := authFunc(token)
 		if err != nil {
-			handlerError(w, r, err)
-			return
+			return err
 		}
 		reqInput, err = sjson.SetBytes(reqInput, "userId", user.GetId())
 		if err != nil {
-			handlerError(w, r, err)
-			return
+			return err
 		}
 	}
 	method, path := api.GetRoute()
 	capi, err := GetApi(method, path)
 	if err != nil {
-		handlerError(w, r, err)
-		return
+		return err
 	}
 	out, err := capi.Run(context.Background(), string(reqInput))
 	if err != nil {
-		handlerError(w, r, err)
-		return
+		return err
 	}
 	jsonContentType := "application/json"
 	if strings.Contains(r.Header.Get("Accept"), jsonContentType) {
@@ -555,37 +549,11 @@ func DefaultHttpHandlerFunc(ctx context.Context, api ApiInterface, w http.Respon
 	}
 	out, err = jsonschemaline.MergeDefault(out, `{"code":"0","message":"ok"}`)
 	if err != nil {
-		handlerError(w, r, err)
-		return
+		return err
 	}
 	_, err = io.WriteString(w, out)
 	if err != nil {
-		handlerError(w, r, err)
-		return
+		return err
 	}
-}
-
-type ResponseCodeMessage struct {
-	Code    int    `json:"code,string"`
-	Message string `json:"message"`
-}
-
-func handlerError(w http.ResponseWriter, r *http.Request, err error) {
-	httpCode := 0
-	if errors.Is(err, gojsonschemavalidator.ERROR_INVALID) {
-		httpCode = http.StatusBadRequest
-	}
-	errorOut := ResponseCodeMessage{
-		Code:    httpCode,
-		Message: err.Error(),
-	}
-	b, err1 := json.Marshal(errorOut)
-	if err1 != nil {
-		panic(err1)
-	}
-	_, err1 = w.Write(b)
-	if err1 != nil {
-		panic(err1)
-	}
-
+	return nil
 }
