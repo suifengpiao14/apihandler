@@ -1,7 +1,8 @@
 package auth
 
 const (
-	TOKEN_KEY = "token"
+	TOKEN_KEY   = "token"
+	USER_ID_KEY = "userId"
 )
 
 type UserInterface interface {

@@ -49,8 +49,8 @@ type ApiInterface interface {
 }
 
 type ApiConfig struct {
-	Auth     bool          `json:"ignoreAuth"` // 需要鉴权
-	Throttle time.Duration `json:"throttle"`   // 节流,一定时间内只执行一次,防止多次连续点击
+	Auth     bool          `json:"auth"`     // 需要鉴权
+	Throttle time.Duration `json:"throttle"` // 节流,一定时间内只执行一次,防止多次连续点击
 }
 
 type LogInfoApiRun struct {
@@ -356,6 +356,10 @@ func (a _Api) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.
 		err = errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
 		return err
 	}
+	err = FillterAuth(w, r) //这个中间件，书写方式后续可以优化
+	if err != nil {
+		return err
+	}
 	err = httpHandlerFunc(ctx, a, w, r)
 	return err
 }
@@ -519,26 +523,13 @@ func DefaultHttpHandlerFunc(ctx context.Context, api ApiInterface, w http.Respon
 	if err != nil {
 		return err
 	}
-	if api.GetConfig().Auth { // 需要鉴权,先鉴权
-		token := gjson.GetBytes(reqInput, auth.GetAuthKey()).String()
-		authFunc, ok := auth.GetAuthFunc()
-		if !ok {
-			err = errors.New("not found authFunc,please call auth.RegisterAuthFunc before")
-			return err
-		}
-		user, err := authFunc(token)
+	capi, ok := api.(_Api) // 优先使用已有的
+	if !ok {
+		method, path := api.GetRoute()
+		capi, err = GetApi(method, path)
 		if err != nil {
 			return err
 		}
-		reqInput, err = sjson.SetBytes(reqInput, "userId", user.GetId())
-		if err != nil {
-			return err
-		}
-	}
-	method, path := api.GetRoute()
-	capi, err := GetApi(method, path)
-	if err != nil {
-		return err
 	}
 	out, err := capi.Run(context.Background(), string(reqInput))
 	if err != nil {
@@ -556,5 +547,44 @@ func DefaultHttpHandlerFunc(ctx context.Context, api ApiInterface, w http.Respon
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func FillterAuth(w http.ResponseWriter, r *http.Request) (err error) {
+	authKey := auth.GetAuthKey()
+	var token string
+	token = r.Header.Get(authKey)
+	if token == "" {
+		cooke, err := r.Cookie(authKey)
+		if err == nil { // cookie 存在赋值
+			token = cooke.Value
+		}
+	}
+	if token == "" {
+		token = r.PostFormValue(authKey)
+	}
+	if token == "" {
+		token = r.FormValue(authKey)
+	}
+
+	authFunc, ok := auth.GetAuthFunc()
+	if !ok {
+		err = errors.New("not found authFunc,please call auth.RegisterAuthFunc before")
+		return err
+	}
+	user, err := authFunc(token)
+	if err != nil {
+		return err
+	}
+
+	// 修改请求，增加auth.USER_ID_KEY 参数
+	if r.URL.RawQuery != "" {
+		r.URL.RawQuery = fmt.Sprintf("&%s", r.URL.RawQuery)
+	}
+	r.URL.RawQuery = fmt.Sprintf("%s=%s", auth.USER_ID_KEY, user.GetId()) // 增加userId
+	if r.Form == nil {
+		r.Form = url.Values{}
+	}
+	r.Form.Add(auth.USER_ID_KEY, user.GetId())
 	return nil
 }
