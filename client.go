@@ -11,6 +11,7 @@ import (
 	"github.com/suifengpiao14/funcs"
 	"github.com/suifengpiao14/gojsonschemavalidator"
 	"github.com/suifengpiao14/jsonschemaline"
+	"github.com/suifengpiao14/kvstruct"
 	"github.com/suifengpiao14/logchan/v2"
 	"github.com/tidwall/gjson"
 	"github.com/xeipuuv/gojsonschema"
@@ -281,4 +282,21 @@ func (a _Client) Run(ctx context.Context, input string) (out string, err error) 
 
 func DefaultHttpRequestFunc(ctx context.Context, client ClientInterface, w http.ResponseWriter, r *http.Request) (err error) {
 	return
+}
+
+// Struct2FormMap 结构体转map[string]string 用于请求参数传递
+func Struct2FormMap(v any) (out map[string]string, err error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	strJson, err := kvstruct.FormatValue2String(string(b), "")
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal([]byte(strJson), &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
