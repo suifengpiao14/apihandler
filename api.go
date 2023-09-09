@@ -116,6 +116,24 @@ func (output *OutputString) String() (out string, err error) {
 	return out, nil
 }
 
+type _OutputJson struct {
+	v any
+}
+
+func (output _OutputJson) String() (out string, err error) {
+	b, err := json.Marshal(output.v)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func OutputJson(v any) OutputI {
+	return _OutputJson{
+		v: v,
+	}
+}
+
 func getRouteKey(method string, path string) (key string) {
 	return fmt.Sprintf("%s_%s", strings.ToLower(method), path)
 }
