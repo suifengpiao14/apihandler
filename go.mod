@@ -12,7 +12,7 @@ require (
 	github.com/suifengpiao14/gojsonschemavalidator v0.0.4
 	github.com/suifengpiao14/jsonschemaline v0.0.48
 	github.com/suifengpiao14/kvstruct v0.0.14
-	github.com/suifengpiao14/logchan/v2 v2.0.12
+	github.com/suifengpiao14/logchan/v2 v2.0.14
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	github.com/xeipuuv/gojsonschema v1.2.0

@@ -19,6 +19,11 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
+type ClientOutputI interface {
+	String() (out string, err error)
+	Error() (err error) // 判断结果是否有错误,没有错误,认为成功
+}
+
 type HttpRequestFunc func(ctx context.Context, client ClientInterface, w http.ResponseWriter, r *http.Request) (err error) // 此处只返回error,确保输出写入到w
 
 type ClientInterface interface {
@@ -28,7 +33,7 @@ type ClientInterface interface {
 	Init()
 	GetDescription() (title string, description string)
 	GetName() (domain string, name string)
-	GetOutputRef() (output OutputI)
+	GetOutputRef() (output ClientOutputI)
 	Request(ctx context.Context) (err error)
 }
 
@@ -197,7 +202,7 @@ func (a _Client) convertInput(input string) (err error) {
 
 // RequestFn 通用请求方法
 func RequestFn(ctx context.Context, input ClientInterface, url string) (err error) {
-	var logInfo logchan.HttpLogInfo
+	logInfo := new(logchan.HttpLogInfo)
 	out := input.GetOutputRef()
 	defer func() {
 		logInfo.Err = err
@@ -221,7 +226,7 @@ func RequestFn(ctx context.Context, input ClientInterface, url string) (err erro
 		return err
 	}
 	paramsStr := string(b)
-	logInfo = logchan.HttpLogInfo{
+	logInfo = &logchan.HttpLogInfo{
 		Name:   "",
 		Method: method,
 		Url:    url,
@@ -235,6 +240,10 @@ func RequestFn(ctx context.Context, input ClientInterface, url string) (err erro
 		r = r.SetBody(params)
 	}
 	_, err = r.Execute(method, url)
+	if err != nil {
+		return err
+	}
+	err = out.Error()
 	if err != nil {
 		return err
 	}

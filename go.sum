@@ -157,8 +157,8 @@ github.com/suifengpiao14/jsonschemaline v0.0.48 h1:kNBEkPkQfI9R7GAu7pGpNRLVZ+tg4
 github.com/suifengpiao14/jsonschemaline v0.0.48/go.mod h1:J/pR9XNvPZhDuNxTh6RdKWydyskN+DTeLH/d3gCQLkU=
 github.com/suifengpiao14/kvstruct v0.0.14 h1:c5Eb6AsBN0gTVGk/Vj05aEiJ79j+pNNo3aIBw09EuMo=
 github.com/suifengpiao14/kvstruct v0.0.14/go.mod h1:v3hf2KPrafdYJJ49M5RWLfpYS8Z2fsJO/rAGMnIBYn8=
-github.com/suifengpiao14/logchan/v2 v2.0.12 h1:bfQY/DMj3EXzMS42DOZbdxKgz+UuoCvThMtnrRciSI8=
-github.com/suifengpiao14/logchan/v2 v2.0.12/go.mod h1:c2DmWbatHcQhLZu1ZiKfMa5B7UFa9APSDqSkTiPBO/4=
+github.com/suifengpiao14/logchan/v2 v2.0.14 h1:w4Zt1rodF2vcd9E8S0jdldqXEn1v9Gn9YN8KwOOPzLs=
+github.com/suifengpiao14/logchan/v2 v2.0.14/go.mod h1:c2DmWbatHcQhLZu1ZiKfMa5B7UFa9APSDqSkTiPBO/4=
 github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/gjson v1.14.4 h1:uo0p8EbA09J7RQaflQ1aBRffTR7xedD2bcIVSYxLnkM=
 github.com/tidwall/gjson v1.14.4/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
