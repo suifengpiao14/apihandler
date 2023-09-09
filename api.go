@@ -374,10 +374,13 @@ func (a _Api) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.
 		err = errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
 		return err
 	}
-	err = FillterAuth(w, r) //这个中间件，书写方式后续可以优化
-	if err != nil {
-		return err
+	if a.GetConfig().Auth {
+		err = FillterAuth(w, r) //这个中间件，书写方式后续可以优化
+		if err != nil {
+			return err
+		}
 	}
+
 	err = httpHandlerFunc(ctx, a, w, r)
 	return err
 }

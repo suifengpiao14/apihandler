@@ -3,12 +3,14 @@ package apihandler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 	"sync"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/pkg/errors"
-	"github.com/suifengpiao14/funcs"
 	"github.com/suifengpiao14/gojsonschemavalidator"
 	"github.com/suifengpiao14/jsonschemaline"
 	"github.com/suifengpiao14/kvstruct"
@@ -20,14 +22,14 @@ import (
 type HttpRequestFunc func(ctx context.Context, client ClientInterface, w http.ResponseWriter, r *http.Request) (err error) // 此处只返回error,确保输出写入到w
 
 type ClientInterface interface {
-	GetRequestHandlerFunc() (httpRequestFunc HttpRequestFunc)
-	GetDoFn() (doFn func(ctx context.Context) (out OutputI, err error))
 	GetInputSchema() (lineschema string)
 	GetOutputSchema() (lineschema string)
 	GetRoute() (method string, path string)
 	Init()
 	GetDescription() (title string, description string)
 	GetName() (domain string, name string)
+	GetOutputRef() (output OutputI)
+	Request(ctx context.Context) (err error)
 }
 
 type DefaultImplementClientFuncs struct{}
@@ -40,10 +42,6 @@ func (e *DefaultImplementClientFuncs) GetOutputSchema() (lineschema string) {
 }
 
 func (e *DefaultImplementClientFuncs) Init() {
-}
-
-func (e *DefaultImplementClientFuncs) GetRequestHandlerFunc() (httpRequestFunc HttpRequestFunc) {
-	return DefaultHttpRequestFunc
 }
 
 type LogInfoClientRun struct {
@@ -197,91 +195,51 @@ func (a _Client) convertInput(input string) (err error) {
 	return nil
 }
 
-func (a _Client) RunRequestHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
-	httpRequestFunc := a.ClientInterface.GetRequestHandlerFunc()
-	if httpRequestFunc == nil {
-		err = errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
-		return err
-	}
-	err = FillterAuth(w, r) //这个中间件，书写方式后续可以优化
-	if err != nil {
-		return err
-	}
-	err = httpRequestFunc(ctx, a, w, r)
-	return err
-}
-
-func (a _Client) Run(ctx context.Context, input string) (out string, err error) {
-	logInfo := LogInfoClientRun{
-		Context:     ctx,
-		Input:       input,
-		DefaultJson: a.defaultJson,
-	}
+// RequestFn 通用请求方法
+func RequestFn(ctx context.Context, input ClientInterface, url string) (err error) {
+	var logInfo logchan.HttpLogInfo
+	out := input.GetOutputRef()
 	defer func() {
-		logchan.SendLogInfo(&logInfo)
+		logInfo.Err = err
+		outStr, err1 := out.String()
+		if logInfo.Err == nil {
+			logInfo.Err = err1
+		}
+		logInfo.Output = outStr
+		logchan.SendLogInfo(logInfo)
 	}()
 
-	if a.ClientInterface == nil {
-		err = errors.Errorf("handlerInterface required %v", a)
-		return "", err
+	method, path := input.GetRoute()
+	url = fmt.Sprintf("%s%s", url, path)
+	r := resty.New().NewRequest().SetResult(&out)
+	params, err := Struct2FormMap(input)
+	if err != nil {
+		return err
 	}
-	if a.ClientInterface.GetDoFn() == nil { //此处只先判断,不取值,等后续将input值填充后再获取
-		err = errors.Errorf("doFn required %v", a.ClientInterface)
-		return "", err
+	b, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+	paramsStr := string(b)
+	logInfo = logchan.HttpLogInfo{
+		Name:   "",
+		Method: method,
+		Url:    url,
+		Input:  paramsStr,
+		Err:    err,
+	}
+	switch strings.ToUpper(method) {
+	case http.MethodGet:
+		r = r.SetQueryParams(params)
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		r = r.SetBody(params)
+	}
+	_, err = r.Execute(method, url)
+	if err != nil {
+		return err
 	}
 
-	// 合并默认值
-	if a.defaultJson != "" {
-		input, err = jsonschemaline.MergeDefault(input, a.defaultJson)
-		if err != nil {
-			err = errors.WithMessage(err, "merge default value error")
-			return "", err
-		}
-		logInfo.MergedDefault = input
-	}
-	err = a.inputValidate(input)
-	if err != nil {
-		return "", err
-	}
-	//将format 中 int,float,bool 应用到数据
-	formattedInput, err := a.modifyTypeByFormat(input, a.inputFormatGjsonPath)
-	if err != nil {
-		return "", err
-	}
-	logInfo.FormattedInput = formattedInput
-	err = a.convertInput(formattedInput)
-	if err != nil {
-		return "", err
-	}
-	doFn := a.ClientInterface.GetDoFn()
-	outI, err := doFn(ctx)
-	if err != nil {
-		return "", err
-	}
-	if funcs.IsNil(outI) {
-		err = errors.New("response not be nil ")
-		err = errors.WithMessage(err, "github.com/suifengpiao14/apihandler._Client.Run")
-		return "", err
-	}
-	originalOut, err := outI.String()
-	if err != nil {
-		return "", err
-	}
-	logInfo.OriginalOut = originalOut
-	out, err = a.modifyTypeByFormat(originalOut, a.outputFormatGjsonPath)
-	if err != nil {
-		return "", err
-	}
-	logInfo.Out = out
-	err = a.outputValidate(out)
-	if err != nil {
-		return "", err
-	}
-	return out, nil
-}
-
-func DefaultHttpRequestFunc(ctx context.Context, client ClientInterface, w http.ResponseWriter, r *http.Request) (err error) {
-	return
+	return nil
 }
 
 // Struct2FormMap 结构体转map[string]string 用于请求参数传递
