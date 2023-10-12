@@ -15,6 +15,7 @@ import (
 	"github.com/suifengpiao14/jsonschemaline"
 	"github.com/suifengpiao14/kvstruct"
 	"github.com/suifengpiao14/logchan/v2"
+	"github.com/suifengpiao14/torm/tormcurl"
 	"github.com/tidwall/gjson"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -50,7 +51,6 @@ func (e *DefaultImplementClientFuncs) Init() {
 }
 
 type LogInfoClientRun struct {
-	Context        context.Context
 	Input          string
 	DefaultJson    string
 	MergedDefault  string
@@ -202,18 +202,7 @@ func (a _Client) convertInput(input string) (err error) {
 
 // RequestFn 通用请求方法
 func RequestFn(ctx context.Context, input ClientInterface, url string) (err error) {
-	logInfo := new(logchan.HttpLogInfo)
 	out := input.GetOutputRef()
-	defer func() {
-		logInfo.Err = err
-		outStr, err1 := out.String()
-		if logInfo.Err == nil {
-			logInfo.Err = err1
-		}
-		logInfo.Output = outStr
-		logchan.SendLogInfo(logInfo)
-	}()
-
 	method, path := input.GetRoute()
 	url = fmt.Sprintf("%s%s", url, path)
 	r := resty.New().NewRequest().SetResult(&out)
@@ -221,28 +210,24 @@ func RequestFn(ctx context.Context, input ClientInterface, url string) (err erro
 	if err != nil {
 		return err
 	}
-	b, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-	paramsStr := string(b)
-	logInfo = &logchan.HttpLogInfo{
-		Name:   "",
-		Method: method,
-		Url:    url,
-		Input:  paramsStr,
-		Err:    err,
-	}
 	switch strings.ToUpper(method) {
 	case http.MethodGet:
 		r = r.SetQueryParams(params)
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		r = r.SetBody(params)
 	}
-	_, err = r.Execute(method, url)
+	err = tormcurl.DoHttpWithLogInfo(r.RawRequest, func() (resp *http.Response, responseBody []byte, err error) {
+		restResp, err := r.Execute(method, url)
+		if err != nil {
+			return nil, nil, err
+		}
+		responseBody = restResp.Body()
+		return restResp.RawResponse, responseBody, nil
+	})
 	if err != nil {
 		return err
 	}
+
 	err = out.Error()
 	if err != nil {
 		return err
