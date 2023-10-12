@@ -46,6 +46,8 @@ type ApiInterface interface {
 	GetDescription() (title string, description string)
 	GetName() (domain string, name string)
 	GetConfig() (cfg ApiConfig)
+	SetCAPI(capi *_Api)
+	GetCAPI() (capi *_Api)
 }
 
 type ApiConfig struct {
@@ -83,7 +85,9 @@ const (
 )
 
 // DefaultImplementFuncs 可选部分接口函数
-type DefaultImplementFuncs struct{}
+type DefaultImplementFuncs struct {
+	_Api *_Api
+}
 
 func (e *DefaultImplementFuncs) GetInputSchema() (lineschema string) {
 	return ""
@@ -103,6 +107,14 @@ func (e *DefaultImplementFuncs) GetConfig() (cfg ApiConfig) {
 	return ApiConfig{
 		Auth: true,
 	}
+}
+
+func (e *DefaultImplementFuncs) SetCAPI(capi *_Api) {
+	e._Api = capi
+
+}
+func (e *DefaultImplementFuncs) GetCAPI() (capi *_Api) {
+	return e._Api
 }
 
 type OutputI interface {
@@ -325,6 +337,7 @@ func GetApi(method string, path string) (api _Api, err error) {
 		outputFormatGjsonPath: exitsApi.outputFormatGjsonPath,
 		defaultJson:           exitsApi.defaultJson,
 	}
+	api.ApiInterface.SetCAPI(&api)
 	return api, nil
 }
 
@@ -349,6 +362,18 @@ func (a _Api) outputValidate(output string) (err error) {
 		return err
 	}
 	return nil
+}
+
+//FormatAsIntput 供外部格式化输出
+func (a _Api) FormatAsIntput(input string) (formatedInput string, err error) {
+	formatedInput, err = a.modifyTypeByFormat(input, a.inputFormatGjsonPath)
+	return formatedInput, err
+}
+
+//FormatAsOutput 供外部格式化输出
+func (a _Api) FormatAsOutput(output string) (formatedOutput string, err error) {
+	formatedOutput, err = a.modifyTypeByFormat(output, a.outputFormatGjsonPath)
+	return formatedOutput, err
 }
 
 func (a _Api) modifyTypeByFormat(input string, formatGjsonPath string) (formattedInput string, err error) {
@@ -418,7 +443,7 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 		return "", err
 	}
 	//将format 中 int,float,bool 应用到数据
-	formattedInput, err := a.modifyTypeByFormat(input, a.inputFormatGjsonPath)
+	formattedInput, err := a.FormatAsIntput(input)
 	if err != nil {
 		return "", err
 	}
@@ -442,7 +467,7 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 		return "", err
 	}
 	logInfo.OriginalOut = originalOut
-	out, err = a.modifyTypeByFormat(originalOut, a.outputFormatGjsonPath)
+	out, err = a.FormatAsOutput(originalOut)
 	if err != nil {
 		return "", err
 	}

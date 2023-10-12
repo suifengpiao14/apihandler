@@ -14,8 +14,8 @@ require (
 	github.com/suifengpiao14/gojsonschemavalidator v0.0.4
 	github.com/suifengpiao14/jsonschemaline v0.0.48
 	github.com/suifengpiao14/kvstruct v0.0.14
-	github.com/suifengpiao14/logchan/v2 v2.0.19
-	github.com/suifengpiao14/torm v0.0.15
+	github.com/suifengpiao14/logchan/v2 v2.0.20
+	github.com/suifengpiao14/torm v0.0.16
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	github.com/xeipuuv/gojsonschema v1.2.0
@@ -29,9 +29,12 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.1.0 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
+	github.com/gopherjs/gopherjs v1.17.2 // indirect
+	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/xid v1.4.0 // indirect
+	github.com/smarty/assertions v1.15.1 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/suifengpiao14/gjsonmodifier v0.1.9 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -47,4 +50,5 @@ require (
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	moul.io/http2curl v1.0.0 // indirect
 )

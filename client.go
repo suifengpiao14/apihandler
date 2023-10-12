@@ -216,18 +216,20 @@ func RequestFn(ctx context.Context, input ClientInterface, url string) (err erro
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		r = r.SetBody(params)
 	}
-	err = tormcurl.DoHttpWithLogInfo(r.RawRequest, func() (resp *http.Response, responseBody []byte, err error) {
-		restResp, err := r.Execute(method, url)
-		if err != nil {
-			return nil, nil, err
-		}
-		responseBody = restResp.Body()
-		return restResp.RawResponse, responseBody, nil
-	})
+	logInfo := &tormcurl.LogInfoHttp{
+		GetRequest: func() *http.Request { return r.RawRequest },
+	}
+	defer func() {
+		logchan.SendLogInfo(logInfo)
+	}()
+	res, err := r.Execute(method, url)
 	if err != nil {
 		return err
 	}
-
+	if err != nil {
+		return err
+	}
+	logInfo.Response = res.RawResponse
 	err = out.Error()
 	if err != nil {
 		return err
