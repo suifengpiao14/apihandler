@@ -35,8 +35,6 @@ var (
 	ERROR_NOT_IMPLEMENTED = errors.New("not implemented")
 )
 
-type HttpHandlerFunc func(ctx context.Context, api ApiInterface, w http.ResponseWriter, r *http.Request) (err error) // 此处只返回error,确保输出写入到w
-
 type ApiInterface interface {
 	GetDoFn() (doFn func(ctx context.Context) (out OutputI, err error))
 	GetInputSchema() (lineschema string)
