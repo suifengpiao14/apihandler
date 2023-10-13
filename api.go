@@ -46,8 +46,8 @@ type ApiInterface interface {
 	GetDescription() (title string, description string)
 	GetName() (domain string, name string)
 	GetConfig() (cfg ApiConfig)
-	SetCAPI(capi *_Api)
-	GetCAPI() (capi *_Api)
+	SetContext(ctx context.Context)
+	GetContext() (ctx context.Context)
 }
 
 type ApiConfig struct {
@@ -86,7 +86,7 @@ const (
 
 // DefaultImplementFuncs 可选部分接口函数
 type DefaultImplementFuncs struct {
-	_Api *_Api
+	ctx context.Context
 }
 
 func (e *DefaultImplementFuncs) GetInputSchema() (lineschema string) {
@@ -109,12 +109,12 @@ func (e *DefaultImplementFuncs) GetConfig() (cfg ApiConfig) {
 	}
 }
 
-func (e *DefaultImplementFuncs) SetCAPI(capi *_Api) {
-	e._Api = capi
+func (e *DefaultImplementFuncs) SetContext(ctx context.Context) {
+	e.ctx = ctx
 
 }
-func (e *DefaultImplementFuncs) GetCAPI() (capi *_Api) {
-	return e._Api
+func (e *DefaultImplementFuncs) GetContext() (ctx context.Context) {
+	return e.ctx
 }
 
 type OutputI interface {
@@ -159,7 +159,7 @@ func JsonMarshal(o interface{}) (out string, err error) {
 	return out, nil
 }
 
-type _Api struct {
+type _CApi struct {
 	ApiInterface
 	inputFormatGjsonPath  string
 	defaultJson           string
@@ -179,7 +179,7 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 	method, path := apiInterface.GetRoute()
 	key := getRouteKey(method, path)
 	// 以下初始化可以复用,线程安全
-	api := &_Api{
+	api := &_CApi{
 		ApiInterface: apiInterface,
 	}
 	inputSchema := apiInterface.GetInputSchema()
@@ -318,18 +318,18 @@ func Run(ctx context.Context, method string, path string, input string) (out str
 
 }
 
-func GetApi(method string, path string) (api _Api, err error) {
+func GetApi(method string, path string) (api _CApi, err error) {
 	key := getRouteKey(method, path)
 	apiAny, ok := apiMap.Load(key)
 	if !ok {
 		return api, errors.WithMessagef(API_NOT_FOUND, "method:%s,path:%s", method, path)
 	}
-	exitsApi := apiAny.(*_Api)
+	exitsApi := apiAny.(*_CApi)
 	rt := reflect.TypeOf(exitsApi.ApiInterface).Elem()
 	rv := reflect.New(rt)
 	apiInterface := rv.Interface().(ApiInterface)
 	apiInterface.Init()
-	api = _Api{
+	api = _CApi{
 		ApiInterface:          apiInterface,
 		validateInputLoader:   exitsApi.validateInputLoader,
 		validateOutputLoader:  exitsApi.validateOutputLoader,
@@ -337,11 +337,11 @@ func GetApi(method string, path string) (api _Api, err error) {
 		outputFormatGjsonPath: exitsApi.outputFormatGjsonPath,
 		defaultJson:           exitsApi.defaultJson,
 	}
-	api.ApiInterface.SetCAPI(&api)
+	api.initContext()
 	return api, nil
 }
 
-func (a _Api) inputValidate(input string) (err error) {
+func (a _CApi) inputValidate(input string) (err error) {
 	if a.validateInputLoader == nil {
 		return nil
 	}
@@ -352,7 +352,7 @@ func (a _Api) inputValidate(input string) (err error) {
 	}
 	return nil
 }
-func (a _Api) outputValidate(output string) (err error) {
+func (a _CApi) outputValidate(output string) (err error) {
 	outputStr := string(output)
 	if a.validateOutputLoader == nil {
 		return nil
@@ -365,18 +365,18 @@ func (a _Api) outputValidate(output string) (err error) {
 }
 
 //FormatAsIntput 供外部格式化输出
-func (a _Api) FormatAsIntput(input string) (formatedInput string, err error) {
+func (a _CApi) FormatAsIntput(input string) (formatedInput string, err error) {
 	formatedInput, err = a.modifyTypeByFormat(input, a.inputFormatGjsonPath)
 	return formatedInput, err
 }
 
 //FormatAsOutput 供外部格式化输出
-func (a _Api) FormatAsOutput(output string) (formatedOutput string, err error) {
+func (a _CApi) FormatAsOutput(output string) (formatedOutput string, err error) {
 	formatedOutput, err = a.modifyTypeByFormat(output, a.outputFormatGjsonPath)
 	return formatedOutput, err
 }
 
-func (a _Api) modifyTypeByFormat(input string, formatGjsonPath string) (formattedInput string, err error) {
+func (a _CApi) modifyTypeByFormat(input string, formatGjsonPath string) (formattedInput string, err error) {
 	formattedInput = input
 	if formatGjsonPath == "" {
 		return formattedInput, nil
@@ -385,7 +385,7 @@ func (a _Api) modifyTypeByFormat(input string, formatGjsonPath string) (formatte
 	return formattedInput, nil
 }
 
-func (a _Api) convertInput(input string) (err error) {
+func (a _CApi) convertInput(input string) (err error) {
 	err = json.Unmarshal([]byte(input), a.ApiInterface)
 	if err != nil {
 		return err
@@ -393,7 +393,7 @@ func (a _Api) convertInput(input string) (err error) {
 	return nil
 }
 
-func (a _Api) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
+func (a _CApi) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
 	httpHandlerFunc := a.ApiInterface.GetHttpHandlerFunc()
 	if httpHandlerFunc == nil {
 		err = errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
@@ -410,7 +410,11 @@ func (a _Api) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.
 	return err
 }
 
-func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
+func (a _CApi) initContext() {
+	setCAPI(a.ApiInterface, &a)
+}
+
+func (a _CApi) Run(ctx context.Context, input string) (out string, err error) {
 	logInfo := LogInfoApiRun{
 		Context:     ctx,
 		Input:       input,
@@ -424,6 +428,7 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 		err = errors.Errorf("handlerInterface required %v", a)
 		return "", err
 	}
+	a.ApiInterface.SetContext(ctx)       // 设置运行上下文
 	if a.ApiInterface.GetDoFn() == nil { //此处只先判断,不取值,等后续将input值填充后再获取
 		err = errors.Errorf("doFn required %v", a.ApiInterface)
 		return "", err
@@ -459,7 +464,7 @@ func (a _Api) Run(ctx context.Context, input string) (out string, err error) {
 	}
 	if funcs.IsNil(outI) {
 		err = errors.New("response not be nil ")
-		err = errors.WithMessage(err, "github.com/suifengpiao14/apihandler._Api.Run")
+		err = errors.WithMessage(err, "github.com/suifengpiao14/apihandler._CApi.Run")
 		return "", err
 	}
 	originalOut, err := outI.String()
@@ -569,7 +574,7 @@ func DefaultHttpHandlerFunc(ctx context.Context, api ApiInterface, w http.Respon
 	if err != nil {
 		return err
 	}
-	capi, ok := api.(_Api) // 优先使用已有的
+	capi, ok := api.(_CApi) // 优先使用已有的
 	if !ok {
 		method, path := api.GetRoute()
 		capi, err = GetApi(method, path)
