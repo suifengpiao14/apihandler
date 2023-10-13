@@ -2,7 +2,6 @@ package example
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/suifengpiao14/apihandler"
 )
@@ -14,14 +13,11 @@ func Run(ctx context.Context, input string) (out string, err error) {
 	ctx = context.WithValue(ctx, key, "hello_world")
 	method := "post"
 	path := "/api/v1/adList"
-	handler, err := apihandler.GetApi(method, path)
+	handler, err := apihandler.GetApi(ctx, method, path)
 	if err != nil {
 		return "", err
 	}
-	out, err = handler.Run(ctx, input, func() {
-		var w http.ResponseWriter
-		apihandler.SetHttpRequestAndResponseWriter(handler, &http.Request{}, w)
-	})
+	out, err = handler.Run(ctx, input)
 	if err != nil {
 		return "", err
 	}

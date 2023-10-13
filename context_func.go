@@ -61,9 +61,9 @@ func SetHttpRequestAndResponseWriter(api ApiInterface, req *http.Request, w http
 }
 
 func GetHttpRequestAndResponseWriter(apiInterface ApiInterface) (req *http.Request, w http.ResponseWriter, err error) {
-	value := apiInterface.GetContext().Value(capiKey)
+	value := apiInterface.GetContext().Value(httpRequestAndResponseWriterKey)
 	if value == nil {
-		err = errors.WithMessagef(CONTEXT_NOT_FOUND_KEY, "key:%s", capiKey)
+		err = errors.WithMessagef(CONTEXT_NOT_FOUND_KEY, "key:%s", httpRequestAndResponseWriterKey)
 		return nil, nil, err
 	}
 	_httpRequestAndResponseWriter, ok := value.(*httpRequestAndResponseWriter)

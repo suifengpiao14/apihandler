@@ -38,7 +38,6 @@ var (
 type HttpHandlerFunc func(ctx context.Context, api ApiInterface, w http.ResponseWriter, r *http.Request) (err error) // 此处只返回error,确保输出写入到w
 
 type ApiInterface interface {
-	GetHttpHandlerFunc() (httpHandlerFunc HttpHandlerFunc)
 	GetDoFn() (doFn func(ctx context.Context) (out OutputI, err error))
 	GetInputSchema() (lineschema string)
 	GetOutputSchema() (lineschema string)
@@ -98,10 +97,6 @@ func (e *DefaultImplementFuncs) GetOutputSchema() (lineschema string) {
 }
 
 func (e *DefaultImplementFuncs) Init() {
-}
-
-func (e *DefaultImplementFuncs) GetHttpHandlerFunc() (httpHandlerFunc HttpHandlerFunc) {
-	return DefaultHttpHandlerFunc
 }
 
 func (e *DefaultImplementFuncs) GetConfig() (cfg ApiConfig) {
@@ -283,7 +278,7 @@ func getAllAPI() (apis []ApiInterface, err error) {
 	apis = make([]ApiInterface, 0)
 	for _, route := range routes {
 		method, path := route[0], route[1]
-		api, err := GetApi(method, path)
+		api, err := GetApi(context.Background(), method, path)
 		if err != nil {
 			return nil, err
 		}
@@ -306,13 +301,13 @@ func GetAllRoute() (routes [][2]string) {
 	return routes
 }
 
-//Run 启动运行，因为ctx 从Run 函数开始设置，所有使用 initCtxFn 延迟运行ctx设置
-func Run(ctx context.Context, method string, path string, input string, initCtxFn func()) (out string, err error) {
-	api, err := GetApi(method, path)
+//Run 启动运行
+func Run(ctx context.Context, method string, path string, input string) (out string, err error) {
+	api, err := GetApi(ctx, method, path)
 	if err != nil {
 		return "", err
 	}
-	out, err = api.Run(ctx, string(input), initCtxFn)
+	out, err = api.Run(ctx, string(input))
 	if err != nil {
 		return "", err
 	}
@@ -320,7 +315,7 @@ func Run(ctx context.Context, method string, path string, input string, initCtxF
 
 }
 
-func GetApi(method string, path string) (api _CApi, err error) {
+func GetApi(ctx context.Context, method string, path string) (api _CApi, err error) {
 	key := getRouteKey(method, path)
 	apiAny, ok := apiMap.Load(key)
 	if !ok {
@@ -339,7 +334,7 @@ func GetApi(method string, path string) (api _CApi, err error) {
 		outputFormatGjsonPath: exitsApi.outputFormatGjsonPath,
 		defaultJson:           exitsApi.defaultJson,
 	}
-	api.initContext()
+	api.initContext(ctx)
 	return api, nil
 }
 
@@ -395,7 +390,7 @@ func (a _CApi) convertInput(input string) (err error) {
 	return nil
 }
 
-func (a _CApi) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
+/* func (a _CApi) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
 	httpHandlerFunc := a.ApiInterface.GetHttpHandlerFunc()
 	if httpHandlerFunc == nil {
 		err = errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
@@ -411,12 +406,13 @@ func (a _CApi) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http
 	err = httpHandlerFunc(ctx, a, w, r)
 	return err
 }
-
-func (a _CApi) initContext() {
+*/
+func (a _CApi) initContext(ctx context.Context) {
+	a.ApiInterface.SetContext(ctx)
 	setCAPI(a.ApiInterface, &a)
 }
 
-func (a _CApi) Run(ctx context.Context, input string, initCtxFn func()) (out string, err error) {
+func (a _CApi) Run(ctx context.Context, input string) (out string, err error) {
 	logInfo := LogInfoApiRun{
 		Context:     ctx,
 		Input:       input,
@@ -429,10 +425,6 @@ func (a _CApi) Run(ctx context.Context, input string, initCtxFn func()) (out str
 	if a.ApiInterface == nil {
 		err = errors.Errorf("handlerInterface required %v", a)
 		return "", err
-	}
-	a.ApiInterface.SetContext(ctx) // 设置运行上下文
-	if initCtxFn != nil {
-		initCtxFn()
 	}
 	if a.ApiInterface.GetDoFn() == nil { //此处只先判断,不取值,等后续将input值填充后再获取
 		err = errors.Errorf("doFn required %v", a.ApiInterface)
@@ -527,6 +519,10 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 	if err != nil {
 		return nil, err
 	}
+	err = r.ParseMultipartForm(32 << 20) // 32 MB
+	if err != nil {
+		return nil, err
+	}
 	for k, values := range r.Form { // 收集表单数据
 		value := ""
 		if len(values) > 0 {
@@ -589,15 +585,13 @@ func DefaultHttpHandlerFunc(ctx context.Context, api ApiInterface, w http.Respon
 	capi, ok := api.(_CApi) // 优先使用已有的
 	if !ok {
 		method, path := api.GetRoute()
-		capi, err = GetApi(method, path)
+		capi, err = GetApi(ctx, method, path)
 		if err != nil {
 			return err
 		}
 	}
 
-	out, err := capi.Run(context.Background(), string(reqInput), func() {
-		SetHttpRequestAndResponseWriter(capi, r, w)
-	})
+	out, err := capi.Run(context.Background(), string(reqInput))
 	if err != nil {
 		return err
 	}
