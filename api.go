@@ -517,10 +517,13 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 	if err != nil {
 		return nil, err
 	}
-	err = r.ParseMultipartForm(32 << 20) // 32 MB
-	if err != nil {
-		return nil, err
+	if strings.Contains(contentType,"multipart/form-data"){
+		err = r.ParseMultipartForm(32 << 20) // 32 MB
+		if err != nil {
+			return nil, err
+		}
 	}
+	
 	for k, values := range r.Form { // 收集表单数据
 		value := ""
 		if len(values) > 0 {
