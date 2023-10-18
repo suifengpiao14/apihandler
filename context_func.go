@@ -17,6 +17,7 @@ type httpRequestAndResponseWriter struct {
 var (
 	capiKey                         contextKey = "_CApi"
 	httpRequestAndResponseWriterKey contextKey = "httpRequestAndResponseWriter"
+	logInfoApiRunKey                contextKey = "logInfoApiRun"
 	CONTEXT_NOT_FOUND_KEY                      = errors.New("not found key")
 	CONTEXT_NOT_EXCEPT                         = errors.New("not except")
 )
@@ -72,5 +73,29 @@ func GetHttpRequestAndResponseWriter(apiInterface ApiInterface) (req *http.Reque
 		return nil, nil, err
 	}
 	return _httpRequestAndResponseWriter.req, _httpRequestAndResponseWriter.w, nil
+}
 
+//setLogInfoApiRun 记录api执行上下文，设置到ctx中，方便在doFn 内部获取使用,仅供内部设置
+func setLogInfoApiRun(api ApiInterface, loginInfo *LogInfoApiRun) {
+	ctx := api.GetContext()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = context.WithValue(ctx, logInfoApiRunKey, loginInfo)
+	api.SetContext(ctx)
+}
+
+//GetLogInfoApiRun 从上下文中获取日志记录对象
+func GetLogInfoApiRun(apiInterface ApiInterface) (loginInfo *LogInfoApiRun, err error) {
+	value := apiInterface.GetContext().Value(logInfoApiRunKey)
+	if value == nil {
+		err = errors.WithMessagef(CONTEXT_NOT_FOUND_KEY, "key:%s", logInfoApiRunKey)
+		return nil, err
+	}
+	loginInfo, ok := value.(*LogInfoApiRun)
+	if !ok {
+		err = errors.WithMessagef(CONTEXT_NOT_EXCEPT, "except:*LogInfoApiRun,got:%T", value)
+		return nil, err
+	}
+	return loginInfo, nil
 }

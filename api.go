@@ -62,6 +62,7 @@ type LogInfoApiRun struct {
 	FormattedInput string
 	OriginalOut    string
 	Out            string
+	More           interface{}
 	logchan.EmptyLogInfo
 }
 
@@ -70,6 +71,24 @@ func (l *LogInfoApiRun) GetName() logchan.LogName {
 }
 func (l *LogInfoApiRun) Error() error {
 	return l.Err
+}
+
+//DefaultPrintLogInfoApiRun 默认api执行日志打印函数
+func DefaultPrintLogInfoApiRun(logInfo logchan.LogInforInterface, typeName logchan.LogName, err error) {
+	if typeName != LOG_INFO_EXEC_API_HANDLER {
+		return
+	}
+	apiRunLogInfo, ok := logInfo.(*LogInfoApiRun)
+	if !ok {
+		return
+	}
+	if err != nil {
+		fmt.Fprintf(logchan.LogWriter, "loginInfo:%s,\nerror:%s\n,input:%s\n", apiRunLogInfo.GetName(), err.Error(), apiRunLogInfo.Input)
+		return
+	}
+	moreb, _ := json.Marshal(apiRunLogInfo.More)
+	more := string(moreb)
+	fmt.Fprintf(logchan.LogWriter, "input:%s,output:%s,more:%s\n", apiRunLogInfo.Input, apiRunLogInfo.Out, more)
 }
 
 type LogName string
@@ -411,13 +430,13 @@ func (a _CApi) initContext(ctx context.Context) {
 }
 
 func (a _CApi) Run(ctx context.Context, input string) (out string, err error) {
-	logInfo := LogInfoApiRun{
+	logInfo := &LogInfoApiRun{
 		Context:     ctx,
 		Input:       input,
 		DefaultJson: a.defaultJson,
 	}
 	defer func() {
-		logchan.SendLogInfo(&logInfo)
+		logchan.SendLogInfo(logInfo)
 	}()
 
 	if a.ApiInterface == nil {
@@ -428,6 +447,7 @@ func (a _CApi) Run(ctx context.Context, input string) (out string, err error) {
 		err = errors.Errorf("doFn required %v", a.ApiInterface)
 		return "", err
 	}
+	setLogInfoApiRun(a.ApiInterface, logInfo) // 设置日志收集器
 
 	// 合并默认值
 	if a.defaultJson != "" {
@@ -517,13 +537,13 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 	if err != nil {
 		return nil, err
 	}
-	if strings.Contains(contentType,"multipart/form-data"){
+	if strings.Contains(contentType, "multipart/form-data") {
 		err = r.ParseMultipartForm(32 << 20) // 32 MB
 		if err != nil {
 			return nil, err
 		}
 	}
-	
+
 	for k, values := range r.Form { // 收集表单数据
 		value := ""
 		if len(values) > 0 {
