@@ -84,7 +84,7 @@ func DefaultPrintLogInfoApiRun(logInfo logchan.LogInforInterface, typeName logch
 	if err != nil {
 		_, err1 := fmt.Fprintf(logchan.LogWriter, "%s|loginInfo:%s|\nerror:%s\n|input:%s\n", logchan.DefaultPrintLog(apiRunLogInfo), apiRunLogInfo.GetName(), err.Error(), apiRunLogInfo.Input)
 		if err1 != nil {
-			fmt.Printf("err: DefaultPrintLogInfoApiRun fmt.Fprintf:%s", err1.Error())
+			fmt.Printf("err: DefaultPrintLogInfoApiRun fmt.Fprintf:%s\n", err1.Error())
 		}
 		return
 	}
@@ -92,7 +92,7 @@ func DefaultPrintLogInfoApiRun(logInfo logchan.LogInforInterface, typeName logch
 	more := string(moreb)
 	_, err1 := fmt.Fprintf(logchan.LogWriter, "%s|input:%s|output:%s|more:%s\n", logchan.DefaultPrintLog(apiRunLogInfo), apiRunLogInfo.Input, apiRunLogInfo.Out, more)
 	if err1 != nil {
-		fmt.Printf("err: DefaultPrintLogInfoApiRun fmt.Fprintf:%s", err1.Error())
+		fmt.Printf("err: DefaultPrintLogInfoApiRun fmt.Fprintf:%s\n", err1.Error())
 	}
 }
 
