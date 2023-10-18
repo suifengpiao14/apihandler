@@ -82,12 +82,18 @@ func DefaultPrintLogInfoApiRun(logInfo logchan.LogInforInterface, typeName logch
 		return
 	}
 	if err != nil {
-		fmt.Fprintf(logchan.LogWriter, "%s|loginInfo:%s|\nerror:%s\n|input:%s\n", logchan.DefaultPrintLog(apiRunLogInfo), apiRunLogInfo.GetName(), err.Error(), apiRunLogInfo.Input)
+		_, err1 := fmt.Fprintf(logchan.LogWriter, "%s|loginInfo:%s|\nerror:%s\n|input:%s\n", logchan.DefaultPrintLog(apiRunLogInfo), apiRunLogInfo.GetName(), err.Error(), apiRunLogInfo.Input)
+		if err1 != nil {
+			fmt.Printf("err: DefaultPrintLogInfoApiRun fmt.Fprintf:%s", err1.Error())
+		}
 		return
 	}
 	moreb, _ := json.Marshal(apiRunLogInfo.More)
 	more := string(moreb)
-	fmt.Fprintf(logchan.LogWriter, "%s|input:%s|output:%s|more:%s\n", logchan.DefaultPrintLog(apiRunLogInfo), apiRunLogInfo.Input, apiRunLogInfo.Out, more)
+	_, err1 := fmt.Fprintf(logchan.LogWriter, "%s|input:%s|output:%s|more:%s\n", logchan.DefaultPrintLog(apiRunLogInfo), apiRunLogInfo.Input, apiRunLogInfo.Out, more)
+	if err1 != nil {
+		fmt.Printf("err: DefaultPrintLogInfoApiRun fmt.Fprintf:%s", err1.Error())
+	}
 }
 
 type LogName string
