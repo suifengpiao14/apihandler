@@ -54,7 +54,6 @@ type ApiConfig struct {
 }
 
 type LogInfoApiRun struct {
-	Context        context.Context
 	Input          string
 	DefaultJson    string
 	MergedDefault  string
@@ -432,7 +431,6 @@ func (a _CApi) initContext(ctx context.Context) {
 
 func (a _CApi) Run(ctx context.Context, input string) (out string, err error) {
 	logInfo := &LogInfoApiRun{
-		Context:     ctx,
 		Input:       input,
 		DefaultJson: a.defaultJson,
 	}
