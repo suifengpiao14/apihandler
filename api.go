@@ -85,10 +85,9 @@ func DefaultPrintLogInfoApiRun(logInfo logchan.LogInforInterface, typeName logch
 		fmt.Fprintf(logchan.LogWriter, "loginInfo:%s|\nerror:%s\n|input:%s\n", apiRunLogInfo.GetName(), err.Error(), apiRunLogInfo.Input)
 		return
 	}
-	processSessionID := logchan.GetSessionID(apiRunLogInfo)
 	moreb, _ := json.Marshal(apiRunLogInfo.More)
 	more := string(moreb)
-	fmt.Fprintf(logchan.LogWriter, "processSessionID:%s|input:%s|output:%s|more:%s\n", processSessionID, apiRunLogInfo.Input, apiRunLogInfo.Out, more)
+	fmt.Fprintf(logchan.LogWriter, "%s|input:%s|output:%s|more:%s\n", logchan.DefaultPrintLog(apiRunLogInfo), apiRunLogInfo.Input, apiRunLogInfo.Out, more)
 }
 
 type LogName string

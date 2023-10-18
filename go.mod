@@ -12,7 +12,7 @@ require (
 	github.com/suifengpiao14/funcs v0.0.9
 	github.com/suifengpiao14/gojsonschemavalidator v0.0.4
 	github.com/suifengpiao14/jsonschemaline v0.0.48
-	github.com/suifengpiao14/logchan/v2 v2.0.20
+	github.com/suifengpiao14/logchan/v2 v2.0.21
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	github.com/xeipuuv/gojsonschema v1.2.0
@@ -24,6 +24,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
+	github.com/go-playground/validator v9.31.0+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.1.0 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
