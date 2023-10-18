@@ -434,6 +434,7 @@ func (a _CApi) Run(ctx context.Context, input string) (out string, err error) {
 		DefaultJson: a.defaultJson,
 	}
 	defer func() {
+		logInfo.Err = err
 		logchan.SendLogInfo(logInfo)
 	}()
 
