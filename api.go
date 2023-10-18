@@ -82,7 +82,7 @@ func DefaultPrintLogInfoApiRun(logInfo logchan.LogInforInterface, typeName logch
 		return
 	}
 	if err != nil {
-		fmt.Fprintf(logchan.LogWriter, "loginInfo:%s|\nerror:%s\n|input:%s\n", apiRunLogInfo.GetName(), err.Error(), apiRunLogInfo.Input)
+		fmt.Fprintf(logchan.LogWriter, "%s|loginInfo:%s|\nerror:%s\n|input:%s\n", logchan.DefaultPrintLog(apiRunLogInfo), apiRunLogInfo.GetName(), err.Error(), apiRunLogInfo.Input)
 		return
 	}
 	moreb, _ := json.Marshal(apiRunLogInfo.More)
