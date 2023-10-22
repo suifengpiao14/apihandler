@@ -523,10 +523,18 @@ func newJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JS
 	return jsonschemaLoader, nil
 }
 
+var (
+	Error_Content_Type_Required = errors.New("http request header Content-Type required")
+)
+
 // RequestInputToJson 统一获取 query,header,body 参数
 func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []byte, err error) {
 	reqInput = make([]byte, 0)
 	contentType := strings.ToLower(r.Header.Get("Content-Type"))
+	if contentType == "" {
+		return nil, Error_Content_Type_Required
+
+	}
 	if strings.Contains(contentType, "application/json") {
 		s, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -584,6 +592,10 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 		Host:   r.Host,
 	}
 	reqInput, err = sjson.SetBytes(reqInput, "http_url", u.String())
+	if err != nil {
+		return nil, err
+	}
+	reqInput, err = sjson.SetBytes(reqInput, "content-type", contentType)
 	if err != nil {
 		return nil, err
 	}
