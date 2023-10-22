@@ -72,7 +72,7 @@ func (l *LogInfoApiRun) Error() error {
 	return l.Err
 }
 
-//DefaultPrintLogInfoApiRun 默认api执行日志打印函数
+// DefaultPrintLogInfoApiRun 默认api执行日志打印函数
 func DefaultPrintLogInfoApiRun(logInfo logchan.LogInforInterface, typeName logchan.LogName, err error) {
 	if typeName != LOG_INFO_EXEC_API_HANDLER {
 		return
@@ -323,7 +323,7 @@ func GetAllRoute() (routes [][2]string) {
 	return routes
 }
 
-//Run 启动运行
+// Run 启动运行
 func Run(ctx context.Context, method string, path string, input string) (out string, err error) {
 	api, err := GetApi(ctx, method, path)
 	if err != nil {
@@ -383,13 +383,13 @@ func (a _CApi) outputValidate(output string) (err error) {
 	return nil
 }
 
-//FormatAsIntput 供外部格式化输出
+// FormatAsIntput 供外部格式化输出
 func (a _CApi) FormatAsIntput(input string) (formatedInput string, err error) {
 	formatedInput, err = a.modifyTypeByFormat(input, a.inputFormatGjsonPath)
 	return formatedInput, err
 }
 
-//FormatAsOutput 供外部格式化输出
+// FormatAsOutput 供外部格式化输出
 func (a _CApi) FormatAsOutput(output string) (formatedOutput string, err error) {
 	formatedOutput, err = a.modifyTypeByFormat(output, a.outputFormatGjsonPath)
 	return formatedOutput, err
@@ -412,22 +412,23 @@ func (a _CApi) convertInput(input string) (err error) {
 	return nil
 }
 
-/* func (a _CApi) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
-	httpHandlerFunc := a.ApiInterface.GetHttpHandlerFunc()
-	if httpHandlerFunc == nil {
-		err = errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
-		return err
-	}
-	if a.GetConfig().Auth {
-		err = FillterAuth(w, r) //这个中间件，书写方式后续可以优化
-		if err != nil {
+/*
+	 func (a _CApi) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
+		httpHandlerFunc := a.ApiInterface.GetHttpHandlerFunc()
+		if httpHandlerFunc == nil {
+			err = errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
 			return err
 		}
-	}
+		if a.GetConfig().Auth {
+			err = FillterAuth(w, r) //这个中间件，书写方式后续可以优化
+			if err != nil {
+				return err
+			}
+		}
 
-	err = httpHandlerFunc(ctx, a, w, r)
-	return err
-}
+		err = httpHandlerFunc(ctx, a, w, r)
+		return err
+	}
 */
 func (a _CApi) initContext(ctx context.Context) {
 	a.ApiInterface.SetContext(ctx)
@@ -573,20 +574,6 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 		}
 	}
 
-	headers := r.Header
-	for k, v := range headers {
-		key := fmt.Sprintf("http_%s", strings.ReplaceAll(strings.ToLower(k), "-", "_"))
-		var value any
-		if useArrInQueryAndHead {
-			value = v
-		} else {
-			value = v[0]
-		}
-		reqInput, err = sjson.SetBytes(reqInput, key, value)
-		if err != nil {
-			return nil, err
-		}
-	}
 	scheme := "http"
 	if strings.Contains(strings.ToLower(r.Proto), "https") {
 		scheme = "https"
