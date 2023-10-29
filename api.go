@@ -15,11 +15,12 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
+
 	"github.com/suifengpiao14/apihandler/auth"
 	"github.com/suifengpiao14/funcs"
-	"github.com/suifengpiao14/gojsonschemavalidator"
 	"github.com/suifengpiao14/jsonschemaline"
 	"github.com/suifengpiao14/logchan/v2"
+	"github.com/suifengpiao14/stream"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"github.com/xeipuuv/gojsonschema"
@@ -360,149 +361,54 @@ func GetApi(ctx context.Context, method string, path string) (api _CApi, err err
 	return api, nil
 }
 
-func (a _CApi) inputValidate(input string) (err error) {
-	if a.validateInputLoader == nil {
-		return nil
-	}
-	inputStr := string(input)
-	err = gojsonschemavalidator.Validate(inputStr, a.validateInputLoader)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (a _CApi) outputValidate(output string) (err error) {
-	outputStr := string(output)
-	if a.validateOutputLoader == nil {
-		return nil
-	}
-	err = gojsonschemavalidator.Validate(outputStr, a.validateOutputLoader)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// FormatAsIntput 供外部格式化输出
-func (a _CApi) FormatAsIntput(input string) (formatedInput string, err error) {
-	formatedInput, err = a.modifyTypeByFormat(input, a.inputFormatGjsonPath)
-	return formatedInput, err
-}
-
-// FormatAsOutput 供外部格式化输出
-func (a _CApi) FormatAsOutput(output string) (formatedOutput string, err error) {
-	formatedOutput, err = a.modifyTypeByFormat(output, a.outputFormatGjsonPath)
-	return formatedOutput, err
-}
-
-func (a _CApi) modifyTypeByFormat(input string, formatGjsonPath string) (formattedInput string, err error) {
-	formattedInput = input
-	if formatGjsonPath == "" {
-		return formattedInput, nil
-	}
-	formattedInput = gjson.Get(input, formatGjsonPath).String()
-	return formattedInput, nil
-}
-
-func (a _CApi) convertInput(input string) (err error) {
-	err = json.Unmarshal([]byte(input), a.ApiInterface)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-/*
-	 func (a _CApi) RunHttpHandle(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
-		httpHandlerFunc := a.ApiInterface.GetHttpHandlerFunc()
-		if httpHandlerFunc == nil {
-			err = errors.Errorf("GetHttpHandlerFunc return nil: %v", a)
-			return err
-		}
-		if a.GetConfig().Auth {
-			err = FillterAuth(w, r) //这个中间件，书写方式后续可以优化
-			if err != nil {
-				return err
-			}
-		}
-
-		err = httpHandlerFunc(ctx, a, w, r)
-		return err
-	}
-*/
 func (a _CApi) initContext(ctx context.Context) {
 	a.ApiInterface.SetContext(ctx)
 	setCAPI(a.ApiInterface, &a)
 }
 
 func (a _CApi) Run(ctx context.Context, input string) (out string, err error) {
-	logInfo := &LogInfoApiRun{
-		Input:       input,
-		DefaultJson: a.defaultJson,
-	}
-	defer func() {
-		logInfo.Err = err
-		logchan.SendLogInfo(logInfo)
-	}()
 
 	if a.ApiInterface == nil {
 		err = errors.Errorf("handlerInterface required %v", a)
 		return "", err
 	}
-	if a.ApiInterface.GetDoFn() == nil { //此处只先判断,不取值,等后续将input值填充后再获取
-		err = errors.Errorf("doFn required %v", a.ApiInterface)
+	dostream := stream.NewStream(
+		ErrorHandlerFn(),
+		MakeUnPackHandler(),
+		MakeMergeDefaultHandler([]byte(a.defaultJson)),
+		MakeValidateHandler(a.validateInputLoader),
+		MakeFormatHandler(a.inputFormatGjsonPath),
+		MakeUnmarshalHandler(a.ApiInterface),
+		func(ctx context.Context, input []byte) (out []byte, err error) {
+			doFn := a.ApiInterface.GetDoFn()
+			outI, err := doFn(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if funcs.IsNil(outI) {
+				err = errors.New("response not be nil ")
+				err = errors.WithMessage(err, "github.com/suifengpiao14/apihandler._CApi.Run")
+				return nil, err
+			}
+			originalOut, err := outI.String()
+			if err != nil {
+				return nil, err
+			}
+			return []byte(originalOut), nil
+		},
+		MakeFormatHandler(a.outputFormatGjsonPath),
+		MakeValidateHandler(a.validateOutputLoader),
+		MakePackHandler(),
+	)
+	if dostream == nil {
+		err = errors.Errorf("work stream required %v", a.ApiInterface)
 		return "", err
 	}
-	setLogInfoApiRun(a.ApiInterface, logInfo) // 设置日志收集器
-
-	// 合并默认值
-	if a.defaultJson != "" {
-		input, err = jsonschemaline.MergeDefault(input, a.defaultJson)
-		if err != nil {
-			err = errors.WithMessage(err, "merge default value error")
-			return "", err
-		}
-		logInfo.MergedDefault = input
-	}
-	err = a.inputValidate(input)
+	outB, err := dostream.Go(a.GetContext(), []byte(input))
 	if err != nil {
 		return "", err
 	}
-	//将format 中 int,float,bool 应用到数据
-	formattedInput, err := a.FormatAsIntput(input)
-	if err != nil {
-		return "", err
-	}
-	logInfo.FormattedInput = formattedInput
-	err = a.convertInput(formattedInput)
-	if err != nil {
-		return "", err
-	}
-	doFn := a.ApiInterface.GetDoFn()
-	outI, err := doFn(ctx)
-	if err != nil {
-		return "", err
-	}
-	if funcs.IsNil(outI) {
-		err = errors.New("response not be nil ")
-		err = errors.WithMessage(err, "github.com/suifengpiao14/apihandler._CApi.Run")
-		return "", err
-	}
-	originalOut, err := outI.String()
-	if err != nil {
-		return "", err
-	}
-	logInfo.OriginalOut = originalOut
-	out, err = a.FormatAsOutput(originalOut)
-	if err != nil {
-		return "", err
-	}
-	logInfo.Out = out
-	err = a.outputValidate(out)
-	if err != nil {
-		return "", err
-	}
-	return out, nil
+	return string(outB), nil
 }
 
 func newJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JSONLoader, err error) {
@@ -602,39 +508,6 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 	return reqInput, nil
 }
 
-func DefaultHttpHandlerFunc(ctx context.Context, api ApiInterface, w http.ResponseWriter, r *http.Request) (err error) {
-	reqInput, err := RequestInputToJson(r, false)
-	if err != nil {
-		return err
-	}
-	capi, ok := api.(_CApi) // 优先使用已有的
-	if !ok {
-		method, path := api.GetRoute()
-		capi, err = GetApi(ctx, method, path)
-		if err != nil {
-			return err
-		}
-	}
-
-	out, err := capi.Run(context.Background(), string(reqInput))
-	if err != nil {
-		return err
-	}
-	jsonContentType := "application/json"
-	if strings.Contains(r.Header.Get("Accept"), jsonContentType) {
-		w.Header().Add("content-type", jsonContentType)
-	}
-	out, err = jsonschemaline.MergeDefault(out, `{"code":"0","message":"ok"}`)
-	if err != nil {
-		return err
-	}
-	_, err = io.WriteString(w, out)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func FillterAuth(w http.ResponseWriter, r *http.Request) (err error) {
 	authKey := auth.GetAuthKey()
 	var token string
@@ -672,4 +545,23 @@ func FillterAuth(w http.ResponseWriter, r *http.Request) (err error) {
 	}
 	r.Form.Add(auth.USER_ID_KEY, user.GetId())
 	return nil
+}
+
+func ErrorHandlerFn() (handlerErrFn stream.HandlerErrorFn) {
+	return func(ctx context.Context, err error) (out []byte) {
+		e := ErrorOut{
+			Code:    "1",
+			Message: err.Error(),
+		}
+		out, err1 := json.Marshal(e)
+		if err1 != nil {
+			panic(err1)
+		}
+		return out
+	}
+}
+
+type ErrorOut struct {
+	Code    string `json:"code"`    // 业务状态码
+	Message string `json:"message"` // 业务提示
 }

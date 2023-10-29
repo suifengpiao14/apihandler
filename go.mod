@@ -1,8 +1,6 @@
 module github.com/suifengpiao14/apihandler
 
-go 1.21
-
-toolchain go1.21.0
+go 1.21.0
 
 require (
 	github.com/casdoor/casdoor-go-sdk v0.29.1
@@ -12,7 +10,8 @@ require (
 	github.com/suifengpiao14/funcs v0.0.9
 	github.com/suifengpiao14/gojsonschemavalidator v0.0.4
 	github.com/suifengpiao14/jsonschemaline v0.0.48
-	github.com/suifengpiao14/logchan/v2 v2.0.21
+	github.com/suifengpiao14/logchan/v2 v2.0.22
+	github.com/suifengpiao14/stream v0.0.2
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	github.com/xeipuuv/gojsonschema v1.2.0
