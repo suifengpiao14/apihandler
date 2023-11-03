@@ -124,6 +124,7 @@ func DefaultApiStream(api ApiInterface, lineschemaApi validatestream.LineschemaA
 	handlerFns = append(handlerFns, in...)
 
 	handlerFns = append(handlerFns, MakeDoFn(api))
+	handlerFns = append(handlerFns, SuccessHandlerFn())
 
 	handlerFns = append(handlerFns, out...)
 	s = stream.NewStream(
@@ -392,6 +393,25 @@ func ErrorHandlerFn() (handlerErrFn stream.HandlerErrorFn) {
 			panic(err1)
 		}
 		return out
+	}
+}
+
+func SuccessHandlerFn() (fn stream.HandlerFn) {
+	return func(ctx context.Context, input []byte) (out []byte, err error) {
+		res := ErrorOut{
+			Code:    "0",
+			Message: "ok",
+		}
+		defaul, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+		out, err = validatestream.MergeDefault(input, defaul)
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+
 	}
 }
 
