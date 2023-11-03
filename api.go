@@ -11,90 +11,31 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 
 	"github.com/suifengpiao14/apihandler/auth"
-	"github.com/suifengpiao14/funcs"
-	"github.com/suifengpiao14/jsonschemaline"
-	"github.com/suifengpiao14/logchan/v2"
+	"github.com/suifengpiao14/lineschema/application/validatestream"
 	"github.com/suifengpiao14/stream"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"github.com/xeipuuv/gojsonschema"
 )
 
-func init() {
-	// 注册默认鉴权服务
-	auth.RegisterAuthFunc(auth.CasDoorAuthFunc)
-}
-
-var API_NOT_FOUND = errors.Errorf("not found")
+var API_NOT_FOUND = errors.Errorf("not found API")
 var (
 	ERROR_NOT_IMPLEMENTED = errors.New("not implemented")
 )
 
 type ApiInterface interface {
-	GetDoFn() (doFn func(ctx context.Context) (out OutputI, err error))
-	GetInputSchema() (lineschema string)
-	GetOutputSchema() (lineschema string)
 	GetRoute() (method string, path string)
+	GetDoFn() func(ctx context.Context) (out OutputI, err error)
 	Init()
 	GetDescription() (title string, description string)
 	GetName() (domain string, name string)
-	GetConfig() (cfg ApiConfig)
 	SetContext(ctx context.Context)
 	GetContext() (ctx context.Context)
-}
-
-type ApiConfig struct {
-	Auth     bool          `json:"auth"`     // 需要鉴权
-	Throttle time.Duration `json:"throttle"` // 节流,一定时间内只执行一次,防止多次连续点击
-}
-
-type LogInfoApiRun struct {
-	Input          string
-	DefaultJson    string
-	MergedDefault  string
-	Err            error `json:"error"`
-	FormattedInput string
-	OriginalOut    string
-	Out            string
-	More           interface{}
-	logchan.EmptyLogInfo
-}
-
-func (l *LogInfoApiRun) GetName() logchan.LogName {
-	return LOG_INFO_EXEC_API_HANDLER
-}
-func (l *LogInfoApiRun) Error() error {
-	return l.Err
-}
-
-// DefaultPrintLogInfoApiRun 默认api执行日志打印函数
-func DefaultPrintLogInfoApiRun(logInfo logchan.LogInforInterface, typeName logchan.LogName, err error) {
-	if typeName != LOG_INFO_EXEC_API_HANDLER {
-		return
-	}
-	apiRunLogInfo, ok := logInfo.(*LogInfoApiRun)
-	if !ok {
-		return
-	}
-	if err != nil {
-		_, err1 := fmt.Fprintf(logchan.LogWriter, "%s|loginInfo:%s|\nerror:%s\n|input:%s\n", logchan.DefaultPrintLog(apiRunLogInfo), apiRunLogInfo.GetName(), err.Error(), apiRunLogInfo.Input)
-		if err1 != nil {
-			fmt.Printf("err: DefaultPrintLogInfoApiRun fmt.Fprintf:%s\n", err1.Error())
-		}
-		return
-	}
-	moreb, _ := json.Marshal(apiRunLogInfo.More)
-	more := string(moreb)
-	_, err1 := fmt.Fprintf(logchan.LogWriter, "%s|input:%s|output:%s|more:%s\n", logchan.DefaultPrintLog(apiRunLogInfo), apiRunLogInfo.Input, apiRunLogInfo.Out, more)
-	if err1 != nil {
-		fmt.Printf("err: DefaultPrintLogInfoApiRun fmt.Fprintf:%s\n", err1.Error())
-	}
+	GetStream() (stream stream.StreamInterface)
 }
 
 type LogName string
@@ -122,12 +63,6 @@ func (e *DefaultImplementFuncs) GetOutputSchema() (lineschema string) {
 func (e *DefaultImplementFuncs) Init() {
 }
 
-func (e *DefaultImplementFuncs) GetConfig() (cfg ApiConfig) {
-	return ApiConfig{
-		Auth: true,
-	}
-}
-
 func (e *DefaultImplementFuncs) SetContext(ctx context.Context) {
 	e.ctx = ctx
 
@@ -135,28 +70,31 @@ func (e *DefaultImplementFuncs) SetContext(ctx context.Context) {
 func (e *DefaultImplementFuncs) GetContext() (ctx context.Context) {
 	return e.ctx
 }
+func (e *DefaultImplementFuncs) GetStream() (s stream.StreamInterface) {
+	return stream.NewStream(nil)
+}
 
 type OutputI interface {
-	String() (out string, err error)
+	String() (out string)
 }
 
 type OutputString string
 
-func (output *OutputString) String() (out string, err error) {
+func (output *OutputString) String() (out string) {
 	out = string(*output)
-	return out, nil
+	return out
 }
 
 type _OutputJson struct {
 	v any
 }
 
-func (output _OutputJson) String() (out string, err error) {
+func (output _OutputJson) String() (out string) {
 	b, err := json.Marshal(output.v)
 	if err != nil {
-		return "", err
+		return fmt.Sprintf("{message:%s}", err.Error())
 	}
-	return string(b), nil
+	return string(b)
 }
 
 func OutputJson(v any) OutputI {
@@ -165,83 +103,70 @@ func OutputJson(v any) OutputI {
 	}
 }
 
-func getRouteKey(method string, path string) (key string) {
-	return fmt.Sprintf("%s_%s", strings.ToLower(method), path)
-}
-
-func JsonMarshal(o interface{}) (out string, err error) {
+func JsonMarshalOutput(o interface{}) (out string) {
 	b, err := json.Marshal(o)
 	if err != nil {
-		return "", err
+		return fmt.Sprintf("{message:%s}", err.Error())
 	}
 	out = string(b)
-	return out, nil
-}
-
-type _CApi struct {
-	ApiInterface
-	inputFormatGjsonPath  string
-	defaultJson           string
-	outputFormatGjsonPath string
-	validateInputLoader   gojsonschema.JSONLoader
-	validateOutputLoader  gojsonschema.JSONLoader
+	return out
 }
 
 var apiMap sync.Map
 
-const (
-	apiMap_route_add_key = "___all_route_add___"
-)
+func DefaultApiStream(api ApiInterface, lineschemaApi validatestream.LineschemaApi) (s *stream.Stream, err error) {
+
+	in, out, err := validatestream.GetApiStreamHandlerFn(lineschemaApi)
+	if err != nil {
+		return nil, err
+	}
+	handlerFns := make([]stream.HandlerFn, 0)
+	handlerFns = append(handlerFns, in...)
+
+	handlerFns = append(handlerFns, MakeDoFn(api))
+
+	handlerFns = append(handlerFns, out...)
+	s = stream.NewStream(
+		ErrorHandlerFn(),
+		handlerFns...,
+	)
+	return s, err
+}
+
+type ApiKey struct {
+	Method string
+	Path   string
+}
+
+func (rk ApiKey) String() (s string) {
+	s = fmt.Sprintf("%s####%s", rk.Method, rk.Path)
+	return s
+}
+
+func NewApiKey(method string, path string) (k ApiKey) {
+	return ApiKey{
+		Method: method,
+		Path:   path,
+	}
+}
 
 // RegisterApi 创建处理器，内部逻辑在接收请求前已经确定，后续不变，所以有错误直接panic ，能正常启动后，这部分不会出现错误
 func RegisterApi(apiInterface ApiInterface) (err error) {
 	method, path := apiInterface.GetRoute()
-	key := getRouteKey(method, path)
-	// 以下初始化可以复用,线程安全
-	api := &_CApi{
-		ApiInterface: apiInterface,
+	key := NewApiKey(method, path)
+	v, ok := apiMap.Load(key)
+	if ok {
+		err = errors.Errorf("key already registered,key:%s,value:%T", key, v)
+		return err
 	}
-	inputSchema := apiInterface.GetInputSchema()
-	if inputSchema != "" {
-		api.validateInputLoader, err = newJsonschemaLoader(inputSchema)
-		if err != nil {
-			return err
-		}
-		inputLineSchema, err := jsonschemaline.ParseJsonschemaline(inputSchema)
-		if err != nil {
-			return err
-		}
-		api.inputFormatGjsonPath = inputLineSchema.GjsonPathWithDefaultFormat(true)
-		defaultInputJson, err := inputLineSchema.DefaultJson()
-		if err != nil {
-			err = errors.WithMessage(err, "get input default json error")
-			return err
-		}
-		api.defaultJson = defaultInputJson.Json
-	}
-	outputSchema := apiInterface.GetOutputSchema()
-	if outputSchema != "" {
-		api.validateOutputLoader, err = newJsonschemaLoader(outputSchema)
-		if err != nil {
-			return err
-		}
-		outputLineSchema, err := jsonschemaline.ParseJsonschemaline(outputSchema)
-		if err != nil {
-			return err
-		}
-		api.outputFormatGjsonPath = outputLineSchema.GjsonPathWithDefaultFormat(true)
-	}
-	apiMap.Store(key, api)
-	routes := make(map[string][2]string, 0)
-	if routesI, ok := apiMap.Load(apiMap_route_add_key); ok {
-		if old, ok := routesI.(map[string][2]string); ok {
-			routes = old
-		}
-	}
-	route := [2]string{method, path}
-	routes[key] = route
-	apiMap.Store(apiMap_route_add_key, routes)
+	apiMap.Store(key, apiInterface)
 	return nil
+}
+
+func Run(api ApiInterface, input []byte) (out []byte) {
+	s := api.GetStream()
+	out = s.Run(api.GetContext(), input)
+	return out
 }
 
 type APIProfile struct {
@@ -291,7 +216,7 @@ func GetAllAPIProfile() (apiProfiles []APIProfile, err error) {
 func RegisterRouteFn(routeFn func(method string, path string)) {
 	routes := GetAllRoute()
 	for _, route := range routes {
-		method, path := route[0], route[1]
+		method, path := route.Method, route.Path
 		routeFn(method, path)
 	}
 }
@@ -300,7 +225,7 @@ func getAllAPI() (apis []ApiInterface, err error) {
 	routes := GetAllRoute()
 	apis = make([]ApiInterface, 0)
 	for _, route := range routes {
-		method, path := route[0], route[1]
+		method, path := route.Method, route.Path
 		api, err := GetApi(context.Background(), method, path)
 		if err != nil {
 			return nil, err
@@ -311,122 +236,31 @@ func getAllAPI() (apis []ApiInterface, err error) {
 }
 
 // GetAllRoute 获取已注册的所有api route
-func GetAllRoute() (routes [][2]string) {
-	routes = make([][2]string, 0)
-	if routesI, ok := apiMap.Load(apiMap_route_add_key); ok {
-		if tmp, ok := routesI.(map[string][2]string); ok {
-			for _, route := range tmp {
-				routes = append(routes, route)
-			}
+func GetAllRoute() (apiKeys []ApiKey) {
+	apiKeys = make([]ApiKey, 0)
+	apiMap.Range(func(key, value any) bool {
+		apiKey, ok := key.(ApiKey)
+		if ok {
+			apiKeys = append(apiKeys, apiKey)
 		}
-	}
-
-	return routes
+		return true
+	})
+	return apiKeys
 }
 
-// Run 启动运行
-func Run(ctx context.Context, method string, path string, input string) (out string, err error) {
-	api, err := GetApi(ctx, method, path)
-	if err != nil {
-		return "", err
-	}
-	out, err = api.Run(ctx, string(input))
-	if err != nil {
-		return "", err
-	}
-	return out, nil
-
-}
-
-func GetApi(ctx context.Context, method string, path string) (api _CApi, err error) {
-	key := getRouteKey(method, path)
+func GetApi(ctx context.Context, method string, path string) (api ApiInterface, err error) {
+	key := NewApiKey(method, path)
 	apiAny, ok := apiMap.Load(key)
 	if !ok {
-		return api, errors.WithMessagef(API_NOT_FOUND, "method:%s,path:%s", method, path)
+		return nil, errors.WithMessagef(API_NOT_FOUND, "method:%s,path:%s", method, path)
 	}
-	exitsApi := apiAny.(*_CApi)
-	rt := reflect.TypeOf(exitsApi.ApiInterface).Elem()
+	exitsApi := apiAny.(ApiInterface)
+	rt := reflect.TypeOf(exitsApi).Elem()
 	rv := reflect.New(rt)
-	apiInterface := rv.Interface().(ApiInterface)
-	apiInterface.Init()
-	api = _CApi{
-		ApiInterface:          apiInterface,
-		validateInputLoader:   exitsApi.validateInputLoader,
-		validateOutputLoader:  exitsApi.validateOutputLoader,
-		inputFormatGjsonPath:  exitsApi.inputFormatGjsonPath,
-		outputFormatGjsonPath: exitsApi.outputFormatGjsonPath,
-		defaultJson:           exitsApi.defaultJson,
-	}
-	api.initContext(ctx)
+	api = rv.Interface().(ApiInterface)
+	api.Init()
+	api.SetContext(ctx)
 	return api, nil
-}
-
-func (a _CApi) initContext(ctx context.Context) {
-	a.ApiInterface.SetContext(ctx)
-	setCAPI(a.ApiInterface, &a)
-}
-
-func (a _CApi) Run(ctx context.Context, input string) (out string, err error) {
-
-	if a.ApiInterface == nil {
-		err = errors.Errorf("handlerInterface required %v", a)
-		return "", err
-	}
-	dostream := stream.NewStream(
-		ErrorHandlerFn(),
-		MakeUnPackHandler(),
-		MakeMergeDefaultHandler([]byte(a.defaultJson)),
-		MakeValidateHandler(a.validateInputLoader),
-		MakeFormatHandler(a.inputFormatGjsonPath),
-		MakeUnmarshalHandler(a.ApiInterface),
-		func(ctx context.Context, input []byte) (out []byte, err error) {
-			doFn := a.ApiInterface.GetDoFn()
-			outI, err := doFn(ctx)
-			if err != nil {
-				return nil, err
-			}
-			if funcs.IsNil(outI) {
-				err = errors.New("response not be nil ")
-				err = errors.WithMessage(err, "github.com/suifengpiao14/apihandler._CApi.Run")
-				return nil, err
-			}
-			originalOut, err := outI.String()
-			if err != nil {
-				return nil, err
-			}
-			return []byte(originalOut), nil
-		},
-		MakeFormatHandler(a.outputFormatGjsonPath),
-		MakeValidateHandler(a.validateOutputLoader),
-		MakePackHandler(),
-	)
-	if dostream == nil {
-		err = errors.Errorf("work stream required %v", a.ApiInterface)
-		return "", err
-	}
-	outB, err := dostream.Go(a.GetContext(), []byte(input))
-	if err != nil {
-		return "", err
-	}
-	return string(outB), nil
-}
-
-func newJsonschemaLoader(lineSchemaStr string) (jsonschemaLoader gojsonschema.JSONLoader, err error) {
-	if lineSchemaStr == "" {
-		err = errors.Errorf("NewJsonschemaLoader: arg lineSchemaStr required,got empty")
-		return nil, err
-	}
-	inputlineSchema, err := jsonschemaline.ParseJsonschemaline(lineSchemaStr)
-	if err != nil {
-		return nil, err
-	}
-	jsb, err := inputlineSchema.JsonSchema()
-	if err != nil {
-		return nil, err
-	}
-	jsonschemaStr := string(jsb)
-	jsonschemaLoader = gojsonschema.NewStringLoader(jsonschemaStr)
-	return jsonschemaLoader, nil
 }
 
 var (

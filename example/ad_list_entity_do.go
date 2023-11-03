@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/suifengpiao14/apihandler"
+	"github.com/suifengpiao14/stream"
 )
 
 func AdListDoFn(ctx context.Context, input *AdListInput) (apihandler.OutputI, error) {
@@ -19,4 +20,12 @@ func AdListDoFn(ctx context.Context, input *AdListInput) (apihandler.OutputI, er
 	}
 	output.Items = append(output.Items, item)
 	return output, nil
+}
+
+func (i *AdListInput) GetStream() (s stream.StreamInterface) {
+	s, err := apihandler.DefaultApiStream(i, i)
+	if err != nil {
+		panic(err)
+	}
+	return s
 }
