@@ -157,17 +157,20 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 	key := NewApiKey(method, path)
 	v, ok := apiMap.Load(key)
 	if ok {
-		err = errors.Errorf("key already registered,key:%s,value:%T", key, v)
+		err = errors.Errorf("api key already registered,key:%s,value:%T", key, v)
 		return err
 	}
 	apiMap.Store(key, apiInterface)
 	return nil
 }
 
-func Run(api ApiInterface, input []byte) (out []byte) {
+func Run(api ApiInterface, input []byte) (out []byte, err error) {
 	s := api.GetStream()
-	out = s.Run(api.GetContext(), input)
-	return out
+	out, err = s.Run(api.GetContext(), input)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 type APIProfile struct {
