@@ -20,10 +20,10 @@ func AdListDoFn(ctx context.Context, input *AdListInput) (apihandler.OutputI, er
 	return output, nil
 }
 
-func (i *AdListInput) GetStream() (s stream.StreamInterface) {
-	s, err := apihandler.DefaultApiStream(i, i)
+func (i *AdListInput) GetStream() (s stream.StreamInterface, err error) {
+	s, err = apihandler.DefaultApiStream(i, i)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return s
+	return s, nil
 }

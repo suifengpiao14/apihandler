@@ -35,7 +35,7 @@ type ApiInterface interface {
 	GetName() (domain string, name string)
 	SetContext(ctx context.Context)
 	GetContext() (ctx context.Context)
-	GetStream() (stream stream.StreamInterface)
+	GetStream() (stream stream.StreamInterface, err error)
 }
 
 type LogName string
@@ -165,7 +165,10 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 }
 
 func Run(api ApiInterface, input []byte) (out []byte, err error) {
-	s := api.GetStream()
+	s, err := api.GetStream()
+	if err != nil {
+		return nil, err
+	}
 	out, err = s.Run(api.GetContext(), input)
 	if err != nil {
 		return nil, err
