@@ -18,7 +18,10 @@ func Run(ctx context.Context, input string) (out string, err error) {
 	if err != nil {
 		return "", err
 	}
-	b := apihandler.Run(handler, []byte(input))
+	b, err := apihandler.Run(handler, []byte(input))
+	if err != nil {
+		return "", err
+	}
 	out = string(b)
 	return out, nil
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suifengpiao14/apihandler/auth"
-	"github.com/suifengpiao14/lineschema/application/validatestream"
+	"github.com/suifengpiao14/lineschema/application/lineschemapacket"
 	"github.com/suifengpiao14/stream"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -36,11 +36,13 @@ type ApiInterface interface {
 	SetContext(ctx context.Context)
 	GetContext() (ctx context.Context)
 	GetStream() (stream stream.StreamInterface)
+	ErrorHandle(ctx context.Context, err error) (out []byte)
 }
 
 type LogName string
 
 func (logName LogName) String() (name string) {
+
 	return string(logName)
 }
 
@@ -114,9 +116,10 @@ func JsonMarshalOutput(o interface{}) (out string) {
 
 var apiMap sync.Map
 
-func DefaultApiStream(api ApiInterface, lineschemaApi validatestream.LineschemaApi) (s *stream.Stream, err error) {
+//LineschemaPacketStream lineschema 包 流处理函数
+func LineschemaPacketStream(api ApiInterface, lineschemaApi lineschemapacket.LineschemaPacketI) (s *stream.Stream, err error) {
 
-	in, out, err := validatestream.GetApiStreamHandlerFn(lineschemaApi)
+	in, out, err := lineschemapacket.GetLineschemaPackageHandlerFn(lineschemaApi)
 	if err != nil {
 		return nil, err
 	}
@@ -124,11 +127,10 @@ func DefaultApiStream(api ApiInterface, lineschemaApi validatestream.LineschemaA
 	handlerFns = append(handlerFns, in...)
 
 	handlerFns = append(handlerFns, MakeDoFn(api))
-	handlerFns = append(handlerFns, SuccessHandlerFn())
 
 	handlerFns = append(handlerFns, out...)
 	s = stream.NewStream(
-		ErrorHandlerFn(),
+		api.ErrorHandle,
 		handlerFns...,
 	)
 	return s, err
@@ -164,10 +166,10 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 	return nil
 }
 
-func Run(api ApiInterface, input []byte) (out []byte) {
+func Run(api ApiInterface, input []byte) (out []byte, err error) {
 	s := api.GetStream()
-	out = s.Run(api.GetContext(), input)
-	return out
+	out, err = s.Run(api.GetContext(), input)
+	return out, err
 }
 
 type APIProfile struct {
@@ -380,42 +382,4 @@ func FillterAuth(w http.ResponseWriter, r *http.Request) (err error) {
 	}
 	r.Form.Add(auth.USER_ID_KEY, user.GetId())
 	return nil
-}
-
-func ErrorHandlerFn() (handlerErrFn stream.HandlerErrorFn) {
-	return func(ctx context.Context, err error) (out []byte) {
-		e := ErrorOut{
-			Code:    "1",
-			Message: err.Error(),
-		}
-		out, err1 := json.Marshal(e)
-		if err1 != nil {
-			panic(err1)
-		}
-		return out
-	}
-}
-
-func SuccessHandlerFn() (fn stream.HandlerFn) {
-	return func(ctx context.Context, input []byte) (out []byte, err error) {
-		res := ErrorOut{
-			Code:    "0",
-			Message: "ok",
-		}
-		defaul, err := json.Marshal(res)
-		if err != nil {
-			return nil, err
-		}
-		out, err = validatestream.MergeDefault(input, defaul)
-		if err != nil {
-			return nil, err
-		}
-		return out, nil
-
-	}
-}
-
-type ErrorOut struct {
-	Code    string `json:"code"`    // 业务状态码
-	Message string `json:"message"` // 业务提示
 }

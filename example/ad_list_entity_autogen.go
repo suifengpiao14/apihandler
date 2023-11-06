@@ -2,10 +2,11 @@ package example
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/suifengpiao14/apihandler"
-	"github.com/suifengpiao14/lineschema/application/validatestream"
+	"github.com/suifengpiao14/lineschema/application/lineschemapacket"
 )
 
 func init() {
@@ -13,7 +14,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = validatestream.RegisterLineschemaApi(&AdListInput{})
+	err = lineschemapacket.RegisterLineschemaPacket(&AdListInput{})
 	if err != nil {
 		panic(err)
 	}
@@ -80,7 +81,7 @@ func (i *AdListInput) GetRoute() (method string, path string) {
 	path = "/api/v1/adList"
 	return http.MethodPost, path
 }
-func (i *AdListInput) GetInputSchema() (lineschema string) {
+func (i *AdListInput) UnpackSchema() (lineschema string) {
 	lineschema = `
 	version=http://json-schema.org/draft-07/schema#,id=in,direction=in
 	fullname=title,required,description=广告标题,comment=广告标题,example=新年豪礼
@@ -96,7 +97,7 @@ func (i *AdListInput) GetInputSchema() (lineschema string) {
 	return
 }
 
-func (i *AdListInput) GetOutputSchema() (lineschema string) {
+func (i *AdListInput) PackSchema() (lineschema string) {
 	lineschema = `
 	version=http://json-schema.org/draft-07/schema#,id=out,direction=out
 	fullname=code,description=业务状态码,comment=业务状态码,example=0
@@ -119,4 +120,21 @@ func (i *AdListInput) GetOutputSchema() (lineschema string) {
 	fullname=pagination.total,description=总数,comment=总数,example=60
 	`
 	return
+}
+
+func (i *AdListInput) ErrorHandle(ctx context.Context, err error) (out []byte) {
+	e := ErrorOut{
+		Code:    "1",
+		Message: err.Error(),
+	}
+	out, err1 := json.Marshal(e)
+	if err1 != nil {
+		panic(err1)
+	}
+	return out
+}
+
+type ErrorOut struct {
+	Code    string `json:"code"`    // 业务状态码
+	Message string `json:"message"` // 业务提示
 }
