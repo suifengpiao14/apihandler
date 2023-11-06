@@ -122,6 +122,19 @@ func (i *AdListInput) PackSchema() (lineschema string) {
 	return
 }
 
+func (i *AdListInput) DoPacketHandler(ctx context.Context, input []byte) (out []byte, err error) {
+	err = json.Unmarshal(input, i)
+	if err != nil {
+		return nil, err
+	}
+	outI, err := i.Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out = []byte(outI.String())
+	return out, nil
+}
+
 func (i *AdListInput) ErrorHandle(ctx context.Context, err error) (out []byte) {
 	e := ErrorOut{
 		Code:    "1",

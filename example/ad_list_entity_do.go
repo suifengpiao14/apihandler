@@ -27,3 +27,8 @@ func (i *AdListInput) GetStream() (s stream.StreamInterface, err error) {
 	}
 	return s, nil
 }
+
+func (i *AdListInput) Do(ctx context.Context) (out apihandler.OutputI, err error) {
+
+	return
+}

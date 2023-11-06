@@ -29,7 +29,8 @@ var (
 
 type ApiInterface interface {
 	GetRoute() (method string, path string)
-	GetDoFn() func(ctx context.Context) (out OutputI, err error)
+	Do(ctx context.Context) (out OutputI, err error)
+	DoPacketHandler(ctx context.Context, input []byte) (out []byte, err error)
 	Init()
 	GetDescription() (title string, description string)
 	GetName() (domain string, name string)
@@ -55,13 +56,6 @@ type DefaultImplementFuncs struct {
 	ctx context.Context
 }
 
-func (e *DefaultImplementFuncs) GetInputSchema() (lineschema string) {
-	return ""
-}
-func (e *DefaultImplementFuncs) GetOutputSchema() (lineschema string) {
-	return ""
-}
-
 func (e *DefaultImplementFuncs) Init() {
 }
 
@@ -71,9 +65,6 @@ func (e *DefaultImplementFuncs) SetContext(ctx context.Context) {
 }
 func (e *DefaultImplementFuncs) GetContext() (ctx context.Context) {
 	return e.ctx
-}
-func (e *DefaultImplementFuncs) GetStream() (s stream.StreamInterface) {
-	return stream.NewStream(nil)
 }
 
 type OutputI interface {
@@ -126,8 +117,7 @@ func LineschemaPacketStream(api ApiInterface, lineschemaApi lineschemapacket.Lin
 	handlerFns := make([]stream.HandlerFn, 0)
 	handlerFns = append(handlerFns, in...)
 
-	handlerFns = append(handlerFns, MakeDoFn(api))
-
+	handlerFns = append(handlerFns, api.DoPacketHandler)
 	handlerFns = append(handlerFns, out...)
 	s = stream.NewStream(
 		api.ErrorHandle,
