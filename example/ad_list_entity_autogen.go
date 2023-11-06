@@ -39,7 +39,7 @@ type AdListOutput struct {
 }
 
 type AdListOutputItem struct {
-	ID           string `json:"id"`
+	ID           int    `json:"id"`
 	Title        string `json:"title,omitempty"`
 	AdvertiserID string `json:"advertiserId"`
 	Summary      string `json:"summary"`
@@ -88,8 +88,8 @@ func (i *AdListInput) UnpackSchema() (lineschema string) {
 	fullname=advertiserId,required,description=广告主,comment=广告主,example=123
 	fullname=beginAt,required,description=可以投放开始时间,comment=可以投放开始时间,example=2023-01-12 00:00:00
 	fullname=endAt,required,description=投放结束时间,comment=投放结束时间,example=2023-01-30 00:00:00
-	fullname=index,required,description=页索引,0开始,default=0,comment=页索引,0开始
-	fullname=size,required,description=每页数量,default=10,comment=每页数量
+	fullname=index,required,format=0,description=页索引,0开始,default=0,comment=页索引,0开始
+	fullname=size,required,format=10,description=每页数量,default=10,comment=每页数量
 	fullname=content-type,required,description=文件格式,default=application/json,comment=文件格式
 	fullname=appid,required,description=访问服务的备案id,comment=访问服务的备案id
 	fullname=signature,required,description=签名,外网访问需开启签名,comment=签名,外网访问需开启签名
@@ -103,7 +103,7 @@ func (i *AdListInput) PackSchema() (lineschema string) {
 	fullname=code,description=业务状态码,comment=业务状态码,example=0
 	fullname=message,description=业务提示,comment=业务提示,example=ok
 	fullname=items,type=array,description=数组,comment=数组,example=-
-	fullname=items[].id,description=主键,comment=主键,example=0
+	fullname=items[].id,format=int,description=主键,comment=主键,example=0
 	fullname=items[].title,description=广告标题,comment=广告标题,example=新年豪礼
 	fullname=items[].advertiserId,description=广告主,comment=广告主,example=123
 	fullname=items[].summary,description=广告素材-文字描述,comment=广告素材-文字描述,example=下单有豪礼
@@ -115,9 +115,9 @@ func (i *AdListInput) PackSchema() (lineschema string) {
 	fullname=items[].remark,description=备注,comment=备注,example=营养早餐广告
 	fullname=items[].valueObj,description=json扩展,广告的值属性对象,comment=json扩展,广告的值属性对象,example={"tag":"index"}
 	fullname=pagination,type=object,description=对象,comment=对象
-	fullname=pagination.index,description=页索引,0开始,comment=页索引,0开始,example=0
-	fullname=pagination.size,description=每页数量,comment=每页数量,example=10
-	fullname=pagination.total,description=总数,comment=总数,example=60
+	fullname=pagination.index,format=int,description=页索引,0开始,comment=页索引,0开始,example=0
+	fullname=pagination.size,format=int,description=每页数量,comment=每页数量,example=10
+	fullname=pagination.total,format=int,description=总数,comment=总数,example=60
 	`
 	return
 }
