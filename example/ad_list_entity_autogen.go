@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/suifengpiao14/apihandler"
-	"github.com/suifengpiao14/lineschema/application/lineschemapacket"
+	"github.com/suifengpiao14/lineschemapacket"
 )
 
 func init() {
@@ -21,13 +21,13 @@ func init() {
 }
 
 type AdListInput struct {
-	Title       string       `json:"title"`
-	AdvertiseID int          `json:"advertiseId,string"`
-	BeginAt     string       `json:"beginAt"`
-	EndAt       string       `json:"endAt"`
-	Index       int          `json:"index,string"`
-	Size        int          `json:"size,string"`
-	Output      AdListOutput `json:"-"`
+	Title        string       `json:"title"`
+	AdvertiserID int          `json:"advertiserId"`
+	BeginAt      string       `json:"beginAt"`
+	EndAt        string       `json:"endAt"`
+	Index        int          `json:"index"`
+	Size         int          `json:"size"`
+	Output       AdListOutput `json:"-"`
 	apihandler.DefaultImplementFuncs
 }
 
@@ -58,7 +58,7 @@ type Pagination struct {
 	Total int `json:"total,string"`
 }
 
-func (o AdListOutput) String() (out string) {
+func (o AdListOutput) Bytes() (out []byte) {
 	return apihandler.JsonMarshalOutput(o)
 }
 
@@ -72,11 +72,6 @@ func (e *AdListInput) GetDescription() (title string, description string) {
 	return "广告列表", "广告列表"
 }
 
-func (i *AdListInput) GetDoFn() (doFn func(ctx context.Context) (out apihandler.OutputI, err error)) {
-	return func(ctx context.Context) (out apihandler.OutputI, err error) {
-		return AdListDoFn(ctx, i)
-	}
-}
 func (i *AdListInput) GetRoute() (method string, path string) {
 	path = "/api/v1/adList"
 	return http.MethodPost, path
@@ -88,9 +83,8 @@ func (i *AdListInput) UnpackSchema() (lineschema string) {
 	fullname=advertiserId,required,description=广告主,comment=广告主,example=123
 	fullname=beginAt,required,description=可以投放开始时间,comment=可以投放开始时间,example=2023-01-12 00:00:00
 	fullname=endAt,required,description=投放结束时间,comment=投放结束时间,example=2023-01-30 00:00:00
-	fullname=index,required,format=0,description=页索引,0开始,default=0,comment=页索引,0开始
-	fullname=size,required,format=10,description=每页数量,default=10,comment=每页数量
-	fullname=content-type,required,description=文件格式,default=application/json,comment=文件格式
+	fullname=index,required,format=int,description=页索引,0开始,default=0,comment=页索引,0开始
+	fullname=size,required,format=int,description=每页数量,default=10,comment=每页数量
 	fullname=appid,required,description=访问服务的备案id,comment=访问服务的备案id
 	fullname=signature,required,description=签名,外网访问需开启签名,comment=签名,外网访问需开启签名
 	`
@@ -100,8 +94,8 @@ func (i *AdListInput) UnpackSchema() (lineschema string) {
 func (i *AdListInput) PackSchema() (lineschema string) {
 	lineschema = `
 	version=http://json-schema.org/draft-07/schema#,id=out,direction=out
-	fullname=code,description=业务状态码,comment=业务状态码,example=0
-	fullname=message,description=业务提示,comment=业务提示,example=ok
+	fullname=code,description=业务状态码,comment=业务状态码,default=0,example=0
+	fullname=message,description=业务提示,comment=业务提示,default=ok,example=ok
 	fullname=items,type=array,description=数组,comment=数组,example=-
 	fullname=items[].id,format=int,description=主键,comment=主键,example=0
 	fullname=items[].title,description=广告标题,comment=广告标题,example=新年豪礼
@@ -122,16 +116,20 @@ func (i *AdListInput) PackSchema() (lineschema string) {
 	return
 }
 
-func (i *AdListInput) DoPacketHandler(ctx context.Context, input []byte) (out []byte, err error) {
-	err = json.Unmarshal(input, i)
+func (i *AdListInput) GetOutRef() (out apihandler.OutI) {
+	return &i.Output
+}
+
+func (i *AdListInput) Run(input []byte) (out []byte, err error) {
+	s, err := apihandler.LineschemaPacketStream(i, i)
 	if err != nil {
 		return nil, err
 	}
-	outI, err := i.Do(ctx)
+	ctx := i.GetContext()
+	out, err = s.Run(ctx, input)
 	if err != nil {
 		return nil, err
 	}
-	out = []byte(outI.String())
 	return out, nil
 }
 

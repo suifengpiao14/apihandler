@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suifengpiao14/apihandler/auth"
-	"github.com/suifengpiao14/lineschema/application/lineschemapacket"
+	"github.com/suifengpiao14/lineschemapacket"
 	"github.com/suifengpiao14/stream"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -29,14 +29,14 @@ var (
 
 type ApiInterface interface {
 	GetRoute() (method string, path string)
-	Do(ctx context.Context) (out OutputI, err error)
-	DoPacketHandler(ctx context.Context, input []byte) (out []byte, err error)
 	Init()
 	GetDescription() (title string, description string)
 	GetName() (domain string, name string)
 	SetContext(ctx context.Context)
 	GetContext() (ctx context.Context)
-	GetStream() (stream stream.StreamInterface, err error)
+	Run(input []byte) (out []byte, err error)
+	Do(ctx context.Context) (err error)
+	GetOutRef() (outRef OutI)
 	ErrorHandle(ctx context.Context, err error) (out []byte)
 }
 
@@ -67,14 +67,14 @@ func (e *DefaultImplementFuncs) GetContext() (ctx context.Context) {
 	return e.ctx
 }
 
-type OutputI interface {
-	String() (out string)
+type OutI interface {
+	Bytes() (out []byte)
 }
 
 type OutputString string
 
-func (output *OutputString) String() (out string) {
-	out = string(*output)
+func (output *OutputString) Bytes() (out []byte) {
+	out = []byte(*output)
 	return out
 }
 
@@ -82,26 +82,30 @@ type _OutputJson struct {
 	v any
 }
 
-func (output _OutputJson) String() (out string) {
+func (output _OutputJson) Bytes() (out []byte) {
 	b, err := json.Marshal(output.v)
 	if err != nil {
-		return fmt.Sprintf("{message:%s}", err.Error())
+		s := fmt.Sprintf("{message:%s}", err.Error())
+		out = []byte(s)
+		return
 	}
-	return string(b)
+	return b
 }
 
-func OutputJson(v any) OutputI {
+func OutputJson(v any) OutI {
 	return _OutputJson{
 		v: v,
 	}
 }
 
-func JsonMarshalOutput(o interface{}) (out string) {
+func JsonMarshalOutput(o interface{}) (out []byte) {
 	b, err := json.Marshal(o)
 	if err != nil {
-		return fmt.Sprintf("{message:%s}", err.Error())
+		s := fmt.Sprintf("{message:%s}", err.Error())
+		out = []byte(s)
+		return
 	}
-	out = string(b)
+	out = b
 	return out
 }
 
@@ -110,20 +114,25 @@ var apiMap sync.Map
 //LineschemaPacketStream lineschema 包 流处理函数
 func LineschemaPacketStream(api ApiInterface, lineschemaApi lineschemapacket.LineschemaPacketI) (s *stream.Stream, err error) {
 
-	in, out, err := lineschemapacket.GetLineschemaPackageHandlerFn(lineschemaApi)
+	lineschemaPacketHandlers, err := lineschemapacket.ServerPackHandlers(lineschemaApi)
 	if err != nil {
 		return nil, err
 	}
-	handlerFns := make([]stream.HandlerFn, 0)
-	handlerFns = append(handlerFns, in...)
-
-	handlerFns = append(handlerFns, api.DoPacketHandler)
-	handlerFns = append(handlerFns, out...)
-	s = stream.NewStream(
-		api.ErrorHandle,
-		handlerFns...,
-	)
+	s = stream.NewStream(api.ErrorHandle, lineschemaPacketHandlers...)
+	s.AddPack(stream.Bytes2Stuct2BytesJsonPacket(api, api.GetOutRef()), wrapDo(api))
 	return s, err
+}
+
+//wrapDo 把api.Do函数柯里化
+func wrapDo(api ApiInterface) stream.PackHandler {
+	return stream.NewPackHandler(func(ctx context.Context, _ []byte) (_ []byte, err error) {
+		err = api.Do(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}, nil)
+
 }
 
 type ApiKey struct {
@@ -154,18 +163,6 @@ func RegisterApi(apiInterface ApiInterface) (err error) {
 	}
 	apiMap.Store(key, apiInterface)
 	return nil
-}
-
-func Run(api ApiInterface, input []byte) (out []byte, err error) {
-	s, err := api.GetStream()
-	if err != nil {
-		return nil, err
-	}
-	out, err = s.Run(api.GetContext(), input)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 type APIProfile struct {
