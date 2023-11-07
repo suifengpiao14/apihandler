@@ -80,7 +80,7 @@ func (i *AdListInput) UnpackSchema() (lineschema string) {
 	lineschema = `
 	version=http://json-schema.org/draft-07/schema#,id=in,direction=in
 	fullname=title,required,description=广告标题,comment=广告标题,example=新年豪礼
-	fullname=advertiserId,required,description=广告主,comment=广告主,example=123
+	fullname=advertiserId,format=int,required,description=广告主,comment=广告主,example=123
 	fullname=beginAt,required,description=可以投放开始时间,comment=可以投放开始时间,example=2023-01-12 00:00:00
 	fullname=endAt,required,description=投放结束时间,comment=投放结束时间,example=2023-01-30 00:00:00
 	fullname=index,required,format=int,description=页索引,0开始,default=0,comment=页索引,0开始
