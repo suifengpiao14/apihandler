@@ -165,8 +165,8 @@ github.com/suifengpiao14/lineschemapacket v0.0.2 h1:iOOjx6/KPyS5smTSMrhGWSlazMeB
 github.com/suifengpiao14/lineschemapacket v0.0.2/go.mod h1:6SnEEaBSbhoDw+4m0pWOAhG+GXLF6NrDeUyoiaTZ93U=
 github.com/suifengpiao14/logchan/v2 v2.0.22 h1:LhpV9E0ofNRQFEvR9MOF4hSHJes8s/aXn9Z4qdLVPck=
 github.com/suifengpiao14/logchan/v2 v2.0.22/go.mod h1:6o0naTqWDkgYMR4vQetJn1zVGMLD9YZ8TrNzQ9OjAFY=
-github.com/suifengpiao14/stream v0.0.7 h1:NtJjF+rJAFmc191iZ4ht2D39vY7w+cvwTuXujpTxUhE=
-github.com/suifengpiao14/stream v0.0.7/go.mod h1:YC0sWm6M/Al2W/z/R1MgbU9WRMPG0lLNLgWpEbqb0/s=
+github.com/suifengpiao14/stream v0.0.9 h1:xaAUfD7loiekldfCs1bdiDy6U7YvwPTQVuvp5Nt4eRY=
+github.com/suifengpiao14/stream v0.0.9/go.mod h1:YC0sWm6M/Al2W/z/R1MgbU9WRMPG0lLNLgWpEbqb0/s=
 github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/gjson v1.17.0 h1:/Jocvlh98kcTfpN2+JzGQWQcqrPQwDrVEMApx/M5ZwM=
 github.com/tidwall/gjson v1.17.0/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
