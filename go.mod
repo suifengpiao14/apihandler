@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/suifengpiao14/lineschemapacket v0.0.4
 	github.com/suifengpiao14/logchan/v2 v2.0.22
-	github.com/suifengpiao14/stream v0.0.12
+	github.com/suifengpiao14/stream v0.0.14
 	github.com/tidwall/gjson v1.17.0
 	github.com/tidwall/sjson v1.2.5
 )
