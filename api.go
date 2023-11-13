@@ -16,7 +16,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suifengpiao14/apihandler/auth"
-	"github.com/suifengpiao14/lineschemapacket"
 	"github.com/suifengpiao14/stream"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -111,16 +110,26 @@ func JsonMarshalOutput(o interface{}) (out []byte) {
 
 var apiMap sync.Map
 
-//LineschemaPacketStream lineschema 包 流处理函数
-func LineschemaPacketStream(api ApiInterface, lineschemaApi lineschemapacket.LineschemaPacketI) (s *stream.Stream, err error) {
+// //LineschemaPacketStream lineschema 包 流处理函数
+// func LineschemaPacketStream(api ApiInterface, lineschemaApi lineschemapacket.LineschemaPacketI) (s *stream.Stream, err error) {
 
-	lineschemaPacketHandlers, err := lineschemapacket.ServerPackHandlers(lineschemaApi)
-	if err != nil {
-		return nil, err
-	}
-	s = stream.NewStream(api.ErrorHandle, lineschemaPacketHandlers...)
-	s.AddPack(stream.Bytes2Stuct2BytesJsonPacket(api, api.GetOutRef()), wrapDo(api))
-	return s, err
+// 	lineschemaPacketHandlers, err := lineschemapacket.ServerPackHandlers(lineschemaApi)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	s = stream.NewStream(api.ErrorHandle, lineschemaPacketHandlers...)
+// 	s.AddPack(stream.Bytes2Stuct2BytesJsonPacket(api, api.GetOutRef()), wrapDo(api))
+// 	return s, err
+// }
+
+//ApiPackHandlers api 处理流函数
+func ApiPackHandlers(api ApiInterface) (packHandlers stream.PackHandlers) {
+	packHandlers = make(stream.PackHandlers, 0)
+	packHandlers.Add(
+		stream.Bytes2Stuct2BytesJsonPacket(api, api.GetOutRef()),
+		wrapDo(api),
+	)
+	return packHandlers
 }
 
 //wrapDo 把api.Do函数柯里化

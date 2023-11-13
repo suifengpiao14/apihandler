@@ -7,6 +7,7 @@ import (
 
 	"github.com/suifengpiao14/apihandler"
 	"github.com/suifengpiao14/lineschemapacket"
+	"github.com/suifengpiao14/stream"
 )
 
 func init() {
@@ -121,10 +122,12 @@ func (i *AdListInput) GetOutRef() (out apihandler.OutI) {
 }
 
 func (i *AdListInput) Run(input []byte) (out []byte, err error) {
-	s, err := apihandler.LineschemaPacketStream(i, i)
+	lineschemaPacketHandlers, err := lineschemapacket.ServerPackHandlers(i)
 	if err != nil {
 		return nil, err
 	}
+	s := stream.NewStream(i.ErrorHandle, lineschemaPacketHandlers...)
+	s.AddPack(apihandler.ApiPackHandlers(i)...)
 	ctx := i.GetContext()
 	out, err = s.Run(ctx, input)
 	if err != nil {
