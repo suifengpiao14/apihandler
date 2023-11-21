@@ -36,7 +36,6 @@ type ApiInterface interface {
 	Run(input []byte) (out []byte, err error)
 	Do(ctx context.Context) (err error)
 	GetOutRef() (outRef OutI)
-	ErrorHandle(ctx context.Context, err error) (out []byte)
 }
 
 type LogName string
