@@ -47,3 +47,36 @@ func GetHttpRequestAndResponseWriter(apiInterface ApiInterface) (req *http.Reque
 	}
 	return _httpRequestAndResponseWriter.req, _httpRequestAndResponseWriter.w, nil
 }
+
+type ApiType string
+const (
+	API_TYPE_QUERY ApiType = "query"
+	API_TYPE_COMMAND ApiType = "command"
+	_ApiTypeContentKey contextKey = "apiType"
+)
+
+//SetAPIType 记录 api 类型到上下文
+func SetAPIType(api ApiInterface, apiType  ApiType) {
+	ctx := api.GetContext()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = context.WithValue(ctx, _ApiTypeContentKey, apiType)
+	api.SetContext(ctx)
+}
+//GetApiType 从上下文中获取 apiType
+func GetApiType(apiInterface ApiInterface) (apiType ApiType) {
+	value := apiInterface.GetContext().Value(_ApiTypeContentKey)
+	apiType = value.(ApiType)
+	return apiType
+}
+
+//ApiTypeIsQuery 判断是否为查询类型api
+func ApiTypeIsQuery(apiType ApiType)bool{
+	return apiType == API_TYPE_QUERY
+}
+
+//ApiTypeIsCommand 判断是否为命令类型api
+func ApiTypeIsCommand(apiType ApiType)bool{
+	return apiType == API_TYPE_COMMAND
+}

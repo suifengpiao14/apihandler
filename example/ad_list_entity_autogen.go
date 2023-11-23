@@ -65,6 +65,9 @@ func (o AdListOutput) Bytes() (out []byte) {
 
 func (i *AdListInput) Init() {
 }
+func (i *AdListInput) ApiType() apihandler.ApiType {
+	return apihandler.API_TYPE_QUERY
+}
 
 func (e *AdListInput) GetName() (domain string, name string) {
 	return "example", "adList"

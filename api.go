@@ -29,6 +29,7 @@ var (
 type ApiInterface interface {
 	GetRoute() (method string, path string)
 	Init()
+	ApiType()(apiType ApiType)
 	GetDescription() (title string, description string)
 	GetName() (domain string, name string)
 	SetContext(ctx context.Context)
