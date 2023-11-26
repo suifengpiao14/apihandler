@@ -29,7 +29,6 @@ var (
 type ApiInterface interface {
 	GetRoute() (method string, path string)
 	Init()
-	ApiType()(apiType ApiType)
 	GetDescription() (title string, description string)
 	GetName() (domain string, name string)
 	SetContext(ctx context.Context)
@@ -122,7 +121,7 @@ var apiMap sync.Map
 // 	return s, err
 // }
 
-//ApiPackHandlers api 处理流函数
+// ApiPackHandlers api 处理流函数
 func ApiPackHandlers(api ApiInterface) (packHandlers stream.PackHandlers) {
 	packHandlers = make(stream.PackHandlers, 0)
 	packHandlers.Add(
@@ -132,7 +131,7 @@ func ApiPackHandlers(api ApiInterface) (packHandlers stream.PackHandlers) {
 	return packHandlers
 }
 
-//wrapDo 把api.Do函数柯里化
+// wrapDo 把api.Do函数柯里化
 func wrapDo(api ApiInterface) stream.PackHandler {
 	return stream.NewPackHandler(func(ctx context.Context, _ []byte) (_ []byte, err error) {
 		err = api.Do(ctx)
