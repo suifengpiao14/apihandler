@@ -109,18 +109,6 @@ func JsonMarshalOutput(o interface{}) (out []byte) {
 
 var apiMap sync.Map
 
-// //LineschemaPacketStream lineschema 包 流处理函数
-// func LineschemaPacketStream(api ApiInterface, lineschemaApi lineschemapacket.LineschemaPacketI) (s *stream.Stream, err error) {
-
-// 	lineschemaPacketHandlers, err := lineschemapacket.ServerPackHandlers(lineschemaApi)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	s = stream.NewStream(api.ErrorHandle, lineschemaPacketHandlers...)
-// 	s.AddPack(stream.Bytes2Stuct2BytesJsonPacket(api, api.GetOutRef()), wrapDo(api))
-// 	return s, err
-// }
-
 // ApiPackHandlers api 处理流函数
 func ApiPackHandlers(api ApiInterface) (packHandlers stream.PackHandlers) {
 	packHandlers = make(stream.PackHandlers, 0)
