@@ -285,7 +285,7 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 			return nil, err
 		}
 		r.Body = io.NopCloser(bytes.NewReader(s)) // 重新生成可读对象
-		if !gjson.ValidBytes(s) {
+		if len(s) > 0 && !gjson.ValidBytes(s) {
 			err = errors.Errorf("body content is invalid json")
 			return nil, err
 		}
