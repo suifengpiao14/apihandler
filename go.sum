@@ -159,10 +159,10 @@ github.com/suifengpiao14/gjsonmodifier v0.1.9 h1:U5d1fe90UpxJQmzzZlS7kG/P4sAF3fZ
 github.com/suifengpiao14/gjsonmodifier v0.1.9/go.mod h1:bwhORc92wKB1Ms1REvG5IGgBLLEjhOt/hu/XmtQWuKw=
 github.com/suifengpiao14/kvstruct v0.0.14 h1:c5Eb6AsBN0gTVGk/Vj05aEiJ79j+pNNo3aIBw09EuMo=
 github.com/suifengpiao14/kvstruct v0.0.14/go.mod h1:v3hf2KPrafdYJJ49M5RWLfpYS8Z2fsJO/rAGMnIBYn8=
-github.com/suifengpiao14/lineschema v0.0.12 h1:5AU40SsbdSCnRMmRtrcUj47TKUGpmljI9e9lvQGlri0=
-github.com/suifengpiao14/lineschema v0.0.12/go.mod h1:Kng5kXrmMOF8A/DIVaX7eDeH5I16ARr1T/SbQQqUn9g=
-github.com/suifengpiao14/lineschemapacket v0.0.7 h1:jFEJDAZP/Z8lQ6tIBx0mrOri0eeP+S/v8WKIZFQctZo=
-github.com/suifengpiao14/lineschemapacket v0.0.7/go.mod h1:SnSWcftRLMnvUf6jb9fhB5RHHQ7RVQ3jtZge3cuGYzo=
+github.com/suifengpiao14/lineschema v0.0.14 h1:vS8RYYhgUuUQEdfGqJNcjOA4tppkEM88KT52+BQDQc8=
+github.com/suifengpiao14/lineschema v0.0.14/go.mod h1:Kng5kXrmMOF8A/DIVaX7eDeH5I16ARr1T/SbQQqUn9g=
+github.com/suifengpiao14/lineschemapacket v0.0.9 h1:BamhvKCCLYpf583FzgMH/uTVaFvOzHnOMPwmDm7tsPQ=
+github.com/suifengpiao14/lineschemapacket v0.0.9/go.mod h1:rHeDDx/m+jg3Yz/xxS1LL6Lt3wfKeGSzMKSz6GfS1Kg=
 github.com/suifengpiao14/logchan/v2 v2.0.22 h1:LhpV9E0ofNRQFEvR9MOF4hSHJes8s/aXn9Z4qdLVPck=
 github.com/suifengpiao14/logchan/v2 v2.0.22/go.mod h1:6o0naTqWDkgYMR4vQetJn1zVGMLD9YZ8TrNzQ9OjAFY=
 github.com/suifengpiao14/stream v0.0.17 h1:JKq2alTY2w6rmJYx2JKzUqQ5Fe3eeukrihxtk7fKXXM=
