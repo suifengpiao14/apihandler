@@ -29,7 +29,6 @@ var (
 type ApiInterface interface {
 	GetRoute() (method string, path string)
 	Init()
-	ApiType() (apiType ApiType)
 	GetDescription() (title string, description string)
 	GetName() (domain string, name string)
 	SetContext(ctx context.Context)
@@ -110,19 +109,7 @@ func JsonMarshalOutput(o interface{}) (out []byte) {
 
 var apiMap sync.Map
 
-// //LineschemaPacketStream lineschema 包 流处理函数
-// func LineschemaPacketStream(api ApiInterface, lineschemaApi lineschemapacket.LineschemaPacketI) (s *stream.Stream, err error) {
-
-// 	lineschemaPacketHandlers, err := lineschemapacket.ServerPackHandlers(lineschemaApi)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	s = stream.NewStream(api.ErrorHandle, lineschemaPacketHandlers...)
-// 	s.AddPack(stream.Bytes2Stuct2BytesJsonPacket(api, api.GetOutRef()), wrapDo(api))
-// 	return s, err
-// }
-
-//ApiPackHandlers api 处理流函数
+// ApiPackHandlers api 处理流函数
 func ApiPackHandlers(api ApiInterface) (packHandlers stream.PackHandlers) {
 	packHandlers = make(stream.PackHandlers, 0)
 	packHandlers.Add(
@@ -132,7 +119,7 @@ func ApiPackHandlers(api ApiInterface) (packHandlers stream.PackHandlers) {
 	return packHandlers
 }
 
-//wrapDo 把api.Do函数柯里化
+// wrapDo 把api.Do函数柯里化
 func wrapDo(api ApiInterface) stream.PackHandler {
 	return stream.NewPackHandler(func(ctx context.Context, _ []byte) (_ []byte, err error) {
 		err = api.Do(ctx)
@@ -286,7 +273,7 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 			return nil, err
 		}
 		r.Body = io.NopCloser(bytes.NewReader(s)) // 重新生成可读对象
-		if !gjson.ValidBytes(s) {
+		if len(s) > 0 && !gjson.ValidBytes(s) {
 			err = errors.Errorf("body content is invalid json")
 			return nil, err
 		}

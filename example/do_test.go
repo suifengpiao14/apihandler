@@ -2,9 +2,9 @@ package example
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/suifengpiao14/logchan/v2"
 )
@@ -14,6 +14,7 @@ func TestRun(t *testing.T) {
 	ctx := context.Background()
 	out, err := Run(ctx, input)
 	require.NoError(t, err)
-	fmt.Println(out)
+	expected := `{"code":"","message":"","items":[{"id":1,"advertiserId":"","summary":"","image":"","link":"","type":"","beginAt":"","endAt":"","remark":"","valueObj":""}],"pagination":{"index":"0","size":"10","total":"100"}}`
+	assert.Equal(t, expected, out)
 	logchan.CloseLogChan()
 }
