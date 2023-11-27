@@ -8,7 +8,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
 	github.com/suifengpiao14/logchan/v2 v2.0.22
-	github.com/suifengpiao14/stream v0.0.17
+	github.com/suifengpiao14/stream v0.0.19
 	github.com/tidwall/gjson v1.17.0
 	github.com/tidwall/sjson v1.2.5
 )
