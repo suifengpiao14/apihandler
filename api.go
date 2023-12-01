@@ -16,7 +16,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suifengpiao14/apihandler/auth"
-	"github.com/suifengpiao14/stream"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -110,26 +109,6 @@ func JsonMarshalOutput(o interface{}) (out []byte) {
 var apiMap sync.Map
 
 // ApiPackHandlers api 处理流函数
-func ApiPackHandlers(api ApiInterface) (packHandlers stream.PackHandlers) {
-	packHandlers = make(stream.PackHandlers, 0)
-	packHandlers.Add(
-		stream.JsonUnmarshalMarshalPacket(api, api.GetOutRef()),
-		wrapDo(api),
-	)
-	return packHandlers
-}
-
-// wrapDo 把api.Do函数柯里化
-func wrapDo(api ApiInterface) stream.PackHandler {
-	return stream.NewPackHandler(func(ctx context.Context, _ []byte) (_ []byte, err error) {
-		err = api.Do(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
-	}, nil)
-
-}
 
 type ApiKey struct {
 	Method string

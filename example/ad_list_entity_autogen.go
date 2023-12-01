@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/suifengpiao14/apihandler"
-	"github.com/suifengpiao14/stream"
 )
 
 func init() {
@@ -79,13 +78,12 @@ func (i *AdListInput) GetOutRef() (out apihandler.OutI) {
 }
 
 func (i *AdListInput) Run(input []byte) (out []byte, err error) {
-	s := stream.NewStream(i.ErrorHandle)
-	s.AddPack(apihandler.ApiPackHandlers(i)...)
-	ctx := i.GetContext()
-	out, err = s.Run(ctx, input)
+	err = i.Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
+	out = i.Output.Bytes()
+
 	return out, nil
 }
 
