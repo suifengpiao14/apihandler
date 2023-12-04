@@ -244,20 +244,26 @@ func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []
 	contentType := strings.ToLower(r.Header.Get("Content-Type"))
 	if contentType == "" {
 		return nil, Error_Content_Type_Required
-
 	}
-	if strings.Contains(contentType, "application/json") {
-		s, err := io.ReadAll(r.Body)
+	var body []byte
+	if r.Body != nil {
+		body, err = io.ReadAll(r.Body)
 		if err != nil {
 			return nil, err
 		}
-		r.Body = io.NopCloser(bytes.NewReader(s)) // 重新生成可读对象
-		if len(s) > 0 && !gjson.ValidBytes(s) {
-			err = errors.Errorf("body content is invalid json")
+		r.Body = io.NopCloser(bytes.NewReader(body)) // 重新生成可读对象
+	}
+
+	isJsonContentType := strings.Contains(contentType, "application/json")
+	if isJsonContentType {
+		ok := gjson.ValidBytes(body)
+		if !ok {
+			err = errors.Errorf("body content is invalid json,maybe error value set to Content-Type header")
 			return nil, err
 		}
-		reqInput = s
+		reqInput = body
 	}
+
 	err = r.ParseForm()
 	if err != nil {
 		return nil, err
