@@ -248,9 +248,6 @@ var (
 func RequestInputToJson(r *http.Request, useArrInQueryAndHead bool) (reqInput []byte, err error) {
 	reqInput = make([]byte, 0)
 	contentType := strings.ToLower(r.Header.Get("Content-Type"))
-	if contentType == "" {
-		return nil, Error_Content_Type_Required
-	}
 	var body []byte
 	if r.Body != nil {
 		body, err = io.ReadAll(r.Body)
