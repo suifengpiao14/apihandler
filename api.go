@@ -75,6 +75,12 @@ func (output *OutputString) Bytes() (out []byte) {
 	return out
 }
 
+type OutputBytes []byte
+
+func (output OutputBytes) Bytes() (out []byte) {
+	return output
+}
+
 type _OutputJson struct {
 	v any
 }
